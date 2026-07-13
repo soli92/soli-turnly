@@ -1,0 +1,47 @@
+# Factory llm-wiki++ v2.32
+# Side-channel Graphify (CCL, R.G6 v2.14) — non versionato
+.graphify-state/
+
+# Hybrid Wiki Search index (EP-042, R.WS2 v2.29)
+.wiki-search/
+
+# Analytics event store (EP-013)
+analytics/events/
+analytics/*.jsonl
+
+# Student Model (EP-045) — per-utente, non versionato
+student_model.json
+
+# Voice PID lock (EP-044/EP-046)
+voice/.voice.pid
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Node / FE
+node_modules/
+.next/
+dist/
+.env
+.env.local
+.env.*.local
+
+# Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test artifacts
+coverage/
+.coverage
+htmlcov/

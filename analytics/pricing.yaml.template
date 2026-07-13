@@ -1,0 +1,94 @@
+# =============================================================================
+# analytics/pricing.yaml — Pricing table (costi modello LLM + tool deterministici)
+# =============================================================================
+# EP-009 (Task Analytics & Measurement) — ADR-022 §B
+# Capability: [[task-analytics-cost-estimation-capability]]
+#   wiki/concepts/task-analytics-cost-estimation-capability.md
+#
+# TEMPLATE opt-in (R.P3): questo è un *.template. Copialo in
+# `analytics/pricing.yaml` e adattalo. Finché il file non-template non esiste e
+# `analytics.measurement.enabled` resta false, nulla è attivato (no lint ERROR).
+#
+# Single-writer logico: PM/Arch della factory derivata, **manuale via PR**.
+#   Nessun tool del framework modifica questo file a runtime.
+# Lettori: compute_agentic_cost (US-034), build_reference_class (US-041),
+#          report (US-037) — via la skill `cost-and-time-analytics` (US-036).
+#
+# Versioning: **git history** è lo storico autorevole. NON esiste un campo
+#   `version:` interno. Ogni cambio = un commit convenzionale
+#   (es. `chore(pricing): bump claude-opus-4-7 input price 2026-07-01`).
+#
+# INVARIANTE — mai hardcodare prezzi nei tool: i tool di costo leggono SEMPRE
+#   da qui. Un modello sconosciuto → fail-loud (vedi ADR-022 §D / §G), mai
+#   imputazione silente di costo zero.
+#
+# valid_from semi-aperto a destra (ADR-022 §E): una entry è valida dal suo
+#   `valid_from` finché la entry **successiva** non la sostituisce. Lista
+#   ordinata ascendente per `valid_from`. Almeno una entry per modello.
+#
+# No retroactive edit (ADR-022 §E): NON modificare una entry con `valid_from`
+#   nel passato (altereresti costi storici già calcolati). Per cambiare prezzo:
+#   appendi una nuova entry. Per un vero fix di dato anomalo: commit esplicito
+#   `fix(pricing): retroactive correction for entry valid_from=YYYY-MM-DD, reason=...`.
+# =============================================================================
+
+currency: EUR                          # ISO 4217. Single currency per file (ADR-022 §B). Default EUR.
+
+models:
+  - id: claude-opus-4-7                # <<model_id>> canonical: lowercase, kebab-case, no dots, no [bracket] di versione.
+    provider: anthropic                # informativo, nessuna logica dipende da questo campo.
+    display_name: "Claude Opus 4.7"    # human-readable per i report.
+    aliases:                           # inverse mapping: varianti raw accettate nell'evento, risolte a `id`.
+      - claude-opus-4.7                #   formato Anthropic SDK (dots)
+      - claude-opus-4-7[1m]            #   formato Claude Code (suffix bracket)
+      - anthropic/claude-opus-4-7      #   formato OpenRouter (prefix provider)
+    pricing:                           # lista ordinata asc per valid_from. Almeno una entry obbligatoria.
+      - valid_from: 2026-01-01         # ISO-8601 date (YYYY-MM-DD), UTC, granularity day. OBBLIGATORIO.
+        # valid_to omesso = indefinito: eventi con ts >= valid_from usano questa entry
+        # finché non compare una entry con valid_from successivo.
+        input_per_1m_tokens: 15.0      # EUR per 1M token di input (unità canonica).
+        output_per_1m_tokens: 75.0     # EUR per 1M token di output.
+        cache_read_per_1m_tokens: 1.5  # EUR per 1M token letti da cache (cross-link compression v2.14).
+        cache_write_per_1m_tokens: 18.75 # EUR per 1M token scritti in cache.
+      - valid_from: 2026-07-01         # entry successiva → la precedente diventa implicitamente valid_to: 2026-06-30.
+        input_per_1m_tokens: 12.0
+        output_per_1m_tokens: 60.0
+        cache_read_per_1m_tokens: 1.2
+        cache_write_per_1m_tokens: 15.0
+
+  - id: claude-sonnet-4                # secondo modello esempio.
+    provider: anthropic
+    display_name: "Claude Sonnet 4"
+    aliases:
+      - claude-sonnet-4.0
+      - anthropic/claude-sonnet-4
+    pricing:
+      - valid_from: 2026-01-01
+        input_per_1m_tokens: 3.0
+        output_per_1m_tokens: 15.0
+        cache_read_per_1m_tokens: 0.3
+        cache_write_per_1m_tokens: 3.75
+
+  - id: gpt-4-1                        # terzo modello esempio (provider diverso).
+    provider: openai
+    display_name: "GPT-4.1"
+    aliases:
+      - gpt-4.1
+      - openai/gpt-4.1
+    pricing:
+      - valid_from: 2026-01-01
+        input_per_1m_tokens: 10.0
+        output_per_1m_tokens: 30.0
+        # cache_*_per_1m_tokens omessi = 0: assenza significa "no cache pricing" per il provider (ADR-022 §B).
+
+tools:                                 # tool deterministici prezzati (es. axe scan, Figma API). Sezione opzionale.
+  - name: run_a11y_scan                # nome del tool come appare in event.tool_calls[].name.
+    cost_unit: scan                    # informativo (corrisponde a tool_calls[].cost_unit).
+    pricing:
+      - valid_from: 2026-01-01
+        price_per_unit: 0.0            # default open-source (axe). Può essere >0 per integrazioni a pagamento.
+  - name: figma_api_call
+    cost_unit: call
+    pricing:
+      - valid_from: 2026-01-01
+        price_per_unit: 0.001          # EUR per chiamata API.

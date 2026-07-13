@@ -1,0 +1,279 @@
+{
+  "estimate_id": "EST-2026-06-08-001",
+  "type": "project_estimate",
+  "schema_version": "ADR-024-E",
+  "generated_at": "2026-06-08T00:00:00Z",
+  "generated_by": "estimation-analyst",
+  "scope": {
+    "project_id": "v219-milestone",
+    "name": "Milestone v2.19 — Hardening & Sustainability (premortem-driven)",
+    "epics": ["EP-012", "EP-013", "EP-014", "EP-015", "EP-016", "EP-017"],
+    "user_stories": 18,
+    "tasks": 39,
+    "tsk_range": "TSK-094..TSK-132",
+    "sprints": "Sprint 15..Sprint 19",
+    "layer": "docs",
+    "routing": "docs -> human (factory.config.yaml routing.docs: human)"
+  },
+  "metadata": {
+    "method": "PERT",
+    "monte_carlo": false,
+    "monte_carlo_skip_reason": "analytics/events/ non esiste, N=0 throughput storico. Monte Carlo throughput forecast non applicabile senza dati reali. Diventa applicabile dopo 8+ settimane di eventi EP-009.",
+    "seed": null,
+    "previous_estimate_id": null,
+    "rate_basis": "fully-loaded",
+    "rate_card_path": "analytics/rates.yaml",
+    "pricing_table_path": "analytics/pricing.yaml",
+    "currency": "EUR"
+  },
+  "reference_class_quality": {
+    "N": 0,
+    "period": null,
+    "similarity": "low",
+    "confidence": "very_low",
+    "mode": "PERT-only",
+    "warning": "Nessun dato storico disponibile: analytics/events/ assente (confermato 2026-06-08). Reference class vuota (N=0). Stima basata solo su elicitation PM (preliminary_estimate_pm nei frontmatter EP). Bias di ottimismo non mitigato (Kahneman/Flyvbjerg). Calibrare contingency al rialzo (>=30%). Questo risultato documenta il rischio T4 del premortem (GIGO): la capability analytics e' configurata (measurement.enabled: true dal 2026-06-04) ma l'event store e' vuoto. EP-013 e' l'azione correttiva."
+  },
+  "pert_decomposition": {
+    "unit": "person-days",
+    "input_source": "preliminary_estimate_pm nei frontmatter EP-012..EP-017 (PM pre-estimate, non commitment)",
+    "epics": [
+      {
+        "id": "EP-012",
+        "title": "Battle-test forcing function",
+        "O": 3.0,
+        "M": 6.0,
+        "P": 12.0,
+        "expected_pd": 6.5,
+        "std_pd": 1.5,
+        "variance": 2.25,
+        "pct_variance": 5.2,
+        "stories": {
+          "US-049": {"O": 1.0, "M": 2.0, "P": 4.0, "expected": 2.167, "std": 0.5},
+          "US-050": {"O": 1.5, "M": 3.0, "P": 6.0, "expected": 3.083, "std": 0.75},
+          "US-051": {"O": 0.5, "M": 1.0, "P": 2.0, "expected": 1.083, "std": 0.25}
+        }
+      },
+      {
+        "id": "EP-013",
+        "title": "Analytics dogfooding instrumentation",
+        "O": 3.5,
+        "M": 7.0,
+        "P": 14.0,
+        "expected_pd": 7.583,
+        "std_pd": 1.75,
+        "variance": 3.0625,
+        "pct_variance": 7.1,
+        "stories": {
+          "US-052": {"O": 1.0, "M": 2.0, "P": 4.0, "expected": 2.167, "std": 0.5},
+          "US-053": {"O": 1.5, "M": 3.0, "P": 6.0, "expected": 3.083, "std": 0.75},
+          "US-054": {"O": 1.0, "M": 2.0, "P": 4.0, "expected": 2.167, "std": 0.5}
+        }
+      },
+      {
+        "id": "EP-014",
+        "title": "Temporal budget governor",
+        "O": 7.0,
+        "M": 14.0,
+        "P": 28.0,
+        "expected_pd": 15.167,
+        "std_pd": 3.5,
+        "variance": 12.25,
+        "pct_variance": 28.6,
+        "stories": {
+          "US-055": {"O": 2.0, "M": 4.0, "P": 8.0, "expected": 4.333, "std": 1.0},
+          "US-056": {"O": 3.0, "M": 6.0, "P": 12.0, "expected": 6.5, "std": 1.5},
+          "US-057": {"O": 2.0, "M": 4.0, "P": 8.0, "expected": 4.333, "std": 1.0}
+        }
+      },
+      {
+        "id": "EP-015",
+        "title": "Decision-preserving compression",
+        "O": 6.5,
+        "M": 13.0,
+        "P": 26.0,
+        "expected_pd": 14.083,
+        "std_pd": 3.25,
+        "variance": 10.5625,
+        "pct_variance": 24.6,
+        "stories": {
+          "US-058": {"O": 2.0, "M": 4.0, "P": 8.0, "expected": 4.333, "std": 1.0},
+          "US-059": {"O": 3.0, "M": 6.0, "P": 12.0, "expected": 6.5, "std": 1.5},
+          "US-060": {"O": 1.5, "M": 3.0, "P": 6.0, "expected": 3.083, "std": 0.75}
+        }
+      },
+      {
+        "id": "EP-016",
+        "title": "Complexity budget & adoption profiles",
+        "O": 7.0,
+        "M": 14.0,
+        "P": 28.0,
+        "expected_pd": 15.167,
+        "std_pd": 3.5,
+        "variance": 12.25,
+        "pct_variance": 28.6,
+        "stories": {
+          "US-061": {"O": 2.0, "M": 4.0, "P": 8.0, "expected": 4.333, "std": 1.0},
+          "US-062": {"O": 3.0, "M": 6.0, "P": 12.0, "expected": 6.5, "std": 1.5},
+          "US-063": {"O": 2.0, "M": 4.0, "P": 8.0, "expected": 4.333, "std": 1.0}
+        }
+      },
+      {
+        "id": "EP-017",
+        "title": "Maintainership & adoption",
+        "O": 3.5,
+        "M": 7.0,
+        "P": 13.0,
+        "expected_pd": 7.417,
+        "std_pd": 1.583,
+        "variance": 2.507,
+        "pct_variance": 5.8,
+        "stories": {
+          "US-064": {"O": 0.5, "M": 1.0, "P": 2.0, "expected": 1.083, "std": 0.25},
+          "US-065": {"O": 1.5, "M": 3.0, "P": 5.0, "expected": 3.0, "std": 0.583},
+          "US-066": {"O": 1.5, "M": 3.0, "P": 6.0, "expected": 3.083, "std": 0.75}
+        }
+      }
+    ],
+    "milestone_total": {
+      "O": 36.5,
+      "M": 61.0,
+      "P": 121.0,
+      "expected_pd": 65.917,
+      "variance_total": 42.882,
+      "std_pd": 6.548,
+      "note": "Additività PERT: E_tot=sum(E_i), var_tot=sum(var_i), std_tot=sqrt(sum(var_i)). Formula: E=(O+4M+P)/6, var=((P-O)/6)^2"
+    }
+  },
+  "estimate": {
+    "estimate_id": "EST-2026-06-08-001",
+    "intervals": {
+      "duration": {
+        "unit": "person-days",
+        "P50": 65.917,
+        "P85": 72.701,
+        "P95": 76.688,
+        "note": "P50=E_PERT=65.917pd. P85=E+1.036*sigma=72.701pd. P95=E+1.645*sigma=76.688pd. Calendar time NON derivato: dipende da capacita' team (1 person: ~13-15 settimane; 2 person paralleli su EP indipendenti: ~7-9 settimane). Mai sommare effort come fosse calendario."
+      },
+      "cost_scenario_human": {
+        "scenario": "A - tutto umano (stato attuale: routing.docs=human, consumer:human su tutti 39 TSK)",
+        "human_pct": 100,
+        "agentic_pct": 0,
+        "model": null,
+        "unit": "EUR",
+        "rate_ref": "analytics/rates.yaml: senior-engineer fully-loaded 90 EUR/h (valid_from 2026-04-01), 8h/pd",
+        "P50": 47460,
+        "P85": 52345,
+        "P95": 55215,
+        "note": "P50=65.917pd*8h*90EUR=47,460EUR. P85=72.701pd*8h*90EUR=52,345EUR. P95=76.688pd*8h*90EUR=55,215EUR. Rate fully-loaded per ruolo senior-engineer (layer docs, framework development)."
+      },
+      "cost_scenario_agentic": {
+        "scenario": "B - post-flip dogfooding (consumer:agent per ~85% TSK docs, residuo ~15% human per task ad alta decisione: ADR-critica, review governance, milestone-closer TSK)",
+        "human_pct": 15,
+        "agentic_pct": 85,
+        "model": "claude-sonnet-4 (pricing.yaml: 3.0 EUR/1M input, 15.0 EUR/1M output, valid_from 2026-01-01)",
+        "model_fallback": "claude-sonnet-4-6 (modello in uso in questa sessione, assente da pricing.yaml — stima interpolata)",
+        "unit": "EUR",
+        "rate_ref": "analytics/rates.yaml + analytics/pricing.yaml",
+        "token_assumption": "12,500 token input / 4,000 token output per TSK docs (skill/agente/runbook mid-size). Ordine di grandezza: 33 TSK agentici x (0.0375+0.060) EUR = ~3.25 EUR LLM puro. Stima molto conservativa: +100% per context overhead, re-prompting, tool invocations = ~6.50 EUR LLM.",
+        "human_residual_assumption": "6 TSK equivalenti a decisione umana (15% di 39) = 6*8h*90EUR/h = 4,320 EUR",
+        "P50_agentic_llm": 6.5,
+        "P50_human_residual": 4320,
+        "P50_total": 4326.5,
+        "P85_agentic_llm": 9.75,
+        "P85_human_residual": 4752,
+        "P85_total": 4761.75,
+        "P95_total": 5200,
+        "note": "WARNING: con N=0 dati reali di token consumption nel framework, questa proiezione token e' speculativa. E' un ordine di grandezza: $4K-$5K vs $47K-$52K umano. Il delta ROI apparente (+90%) e' soggetto a bias di ottimismo severo senza dati di consumo token reali (proprio il rischio T4 che EP-013 chiude). Non usare come forecast finanziario. Produrre almeno 8 settimane di eventi analytics/events/ prima di calibrare questa stima.",
+        "confidence_override": "very_low_extreme — stima token basata su assunzioni senza alcuna reference class"
+      }
+    },
+    "split": {
+      "scenario_A_human": {
+        "human_pct": 100,
+        "agentic_pct": 0,
+        "rationale": "Stato attuale: routing.docs=human in factory.config.yaml. Tutti i 39 TSK hanno consumer:human."
+      },
+      "scenario_B_agentic": {
+        "human_pct": 15,
+        "agentic_pct": 85,
+        "rationale": "Post-flip dogfooding c2. 15% residuo human stimato per: (1) decisioni di ADR che richiedono giudizio esperto (EP-014 US-056 bootstrap problem, EP-015 US-059 consistency-check architettura, EP-016 US-062 mappatura profili, US-063 primo round rimozione); (2) TSK milestone-closer che scrivono CHANGELOG.md + governance finale; (3) milestone gate umani explicitati nel DAG (sprint.md parallel_gate_threshold). Stima: TSK-094, TSK-100, TSK-109, TSK-123, TSK-126, TSK-132 = 6 TSK ad alta decisione umana non delegabile."
+      }
+    },
+    "contingency_pct": 35,
+    "contingency_basis": "N=0 storico — enforce >=30% (ADR-025 §C/§D). Alzato a 35% (identico a EST-2026-06-04-001 EP-011) per: (1) 19 ADR candidati aperti su 6 EP (EP-012 ha 6 ADR, EP-013 ha 6, EP-014 ha 7, EP-015 ha 7, EP-016 ha 7, EP-017 ha 5); (2) strong single-writer serialization risk PATTERN.md Sprint 19 (5 TSK sequenziali su stesso file = bottleneck del critical path); (3) confidence very_low per tutti gli EP.",
+    "budget_prudente_scenario_A": {
+      "P85_plus_contingency": 70666,
+      "note": "P85 Scenario A (52,345 EUR) + 35% contingency (18,321 EUR) = 70,666 EUR. Budget massimo di pianificazione per scenario umano."
+    },
+    "budget_prudente_scenario_B": {
+      "P85_plus_contingency": 6429,
+      "note": "P85 Scenario B (4,762 EUR) + 35% contingency (1,667 EUR) = 6,429 EUR. WARNING: valore proiettato senza base empirica — confidence_override very_low_extreme."
+    },
+    "assumptions": [
+      "scope: 6 EP (EP-012..EP-017), 18 US (US-049..066), 39 TSK (TSK-094..132), layer docs, tutti consumer:human allo stato attuale.",
+      "team: 1 persona (autore unico soli92, bus factor 1 — EP-017 e' l'azione correttiva).",
+      "model_id: claude-sonnet-4 per scenario B (pricing.yaml). Il modello in uso in questa sessione e' claude-sonnet-4-6, non presente in pricing.yaml — stima interpolata per ordine di grandezza.",
+      "rate_basis: fully-loaded. Rate: senior-engineer 90 EUR/h (analytics/rates.yaml valid_from 2026-04-01), 8h/pd.",
+      "assenza_dati_storici: analytics/events/ NON ESISTE (verificato 2026-06-08). N=0 eventi. Questa e' la evidenza concreta del rischio T4 del premortem (GIGO: capability configurata ma non operativa). Stima PERT-only su elicitation PM.",
+      "input_pert: preliminary_estimate_pm nei frontmatter EP (sorgente PM, non commitment). Valori O/M/P estratti verbatim da ciascun EP. Aggregazione PERT standard: additività varianze.",
+      "compression_layer: compression.output.enabled=false (factory.config.yaml). Nessuno sconto token da Caveman Protocol.",
+      "context_compression: compression.context.enabled=false, code_paths=[]. Nessun Graphify context.",
+      "sprint_velocita: non stimata — effort != calendario. 1 persona: ~13-15 settimane a P50 (5 sprint x 2-3 settimane cadenza). Parallelismo cross-EP possibile su EP indipendenti (nessuna hard dep tra EP-012, EP-013, EP-015, EP-016, EP-017 — solo EP-014 hard dep su EP-011 gia' completa).",
+      "adr_aperte: 19 ADR candidati cross-EP aperte alla data della stima. Ogni ADR risolta puo' spostare O/M/P delle US dipendenti. In particolare: EP-014 US-056 bootstrap problem (sigma=1.5pd), EP-015 US-059 architettura consistency check (sigma=1.5pd), EP-016 US-062 meccanica profili (sigma=1.5pd).",
+      "calendar_vs_effort: P50/P85 sono effort (person-days), non durata calendario. La conversione richiede capacita' giornaliera e disponibilità del team (mai sommare effort come fosse calendario, concept §Estimazione)."
+    ],
+    "sensitivity_drivers": [
+      {
+        "rank": 1,
+        "driver": "single_writer_serialization_PATTERN_md",
+        "impact": "+20-30% durata P85 (solo Sprint 19)",
+        "description": "Sprint 19 ha 5 TSK sequenziali su PATTERN.md (TSK-112 -> TSK-119 -> TSK-121 -> TSK-123 -> TSK-126). Nessuna parallelizzazione possibile su questo file. E' il bottleneck del critical path. Se ogni TSK richiede 0.5-1pd su PATTERN.md, questo path da solo impiega 2.5-5pd seriali, bloccando l'intero Sprint 19. Impatto: allungamento durata calendario > allungamento effort.",
+        "mitigation": "Assegnare lo stesso agent/persona all'intera catena PATTERN.md in una sessione continua. Evitare hand-off tra sessioni su questo file."
+      },
+      {
+        "rank": 2,
+        "driver": "adr_resolution_EP014_EP015",
+        "impact": "+15-25% P85 su EP-014 e EP-015 se ADR espandono scope",
+        "description": "EP-014 US-056 (governor logic bootstrap problem) e EP-015 US-059 (consistency-check architettura) hanno entrambe sigma=1.5pd e P/O ratio = 4.0 (28/7 e 26/6.5). Sono le due US con maggiore varianza assoluta. Se le ADR di Arch scelgono l'opzione piu' complessa (EP-014: downgrade+replan a 4 soglie; EP-015: agente terzo dedicated consistency-checker), i valori P reali si avvicineranno al valore worst-case (28pd e 26pd per i rispettivi EP).",
+        "mitigation": "Risolvere ADR su semantica cap economico e architettura consistency-check prima di sprint planning Sprint 18. Ogni ADR risolta riduce sigma dell'US dipendente."
+      },
+      {
+        "rank": 3,
+        "driver": "ep016_pattern_review_scope",
+        "impact": "+10-20% P85 su EP-016",
+        "description": "EP-016 US-062 (mappatura concreta sezione->profilo) richiede review architetturale completa di PATTERN.md (22 sezioni). Se la review rivela che la mappatura e' piu' complessa del previsto (es. sezioni con dipendenze nascoste tra minimal/standard/full), P puo' tendere al worst-case (28pd). EP-016 ha la stessa varianza di EP-014 (sigma=3.5pd).",
+        "mitigation": "Effettuare una pre-review di PATTERN.md prima del kickoff EP-016, identificando le 3-5 sezioni candidate alla rimozione in advance. Riduce M->P di US-063."
+      },
+      {
+        "rank": 4,
+        "driver": "reference_class_N_zero",
+        "impact": "Bias di ottimismo strutturale non quantificabile",
+        "description": "N=0 dati storici significa che nessuna outside view (Kahneman/Flyvbjerg) e' disponibile. I valori O/M/P degli EP sono elicitation PM su scope nuovo, soggetti al planning fallacy. La ricerca empirica (Flyvbjerg 2002, Buehler et al.) mostra che progetti simili vengono sottostimati in media del 30-50%. La contingency 35% e' l'unica mitigazione strutturale disponibile senza dati.",
+        "mitigation": "EP-013 e' l'azione correttiva: accendere analytics/events/ produce la reference class per calibrare future stime. Rieseguire /estimate dopo 8+ settimane di eventi."
+      },
+      {
+        "rank": 5,
+        "driver": "sprint19_factory_config_serialization",
+        "impact": "+5-10% durata Sprint 19",
+        "description": "factory.config.yaml ha 3 TSK writer sequenziali in Sprint 19 (TSK-113 -> TSK-119 -> TSK-124). Minor rispetto a PATTERN.md ma identico meccanismo di bottleneck. Tocca blocchi temporal.budget:, R.C7 compression, adoption_profile:.",
+        "mitigation": "Stessa strategia: assegnare lo stesso agente/persona all'intera catena factory.config in Sprint 19."
+      }
+    ],
+    "critical_path": {
+      "description": "Path che massimizza la durata al P85 nel DAG cross-EP del milestone v2.19",
+      "path": "Sprint-15-Wave-A [TSK-094, TSK-102, TSK-103 paralleli] -> Sprint-15-Wave-B [TSK-095, TSK-104] -> Sprint-15-Wave-C [TSK-096] -> Sprint-16-Wave-A [TSK-097] -> Sprint-16-Wave-B [TSK-098, TSK-099, TSK-105, TSK-107] -> Sprint-16-Wave-C [TSK-106] -> Sprint-17 [TSK-100, TSK-108 || TSK-101, TSK-109] -> Sprint-18-Wave-A [TSK-110] -> Sprint-18-Wave-A [TSK-111] -> Sprint-18-Wave-B [TSK-121] -> Sprint-19-Wave-C [TSK-112] -> Sprint-19 [TSK-119] -> Sprint-19 [TSK-121] -> Sprint-19 [TSK-123] -> Sprint-19 [TSK-125] -> Sprint-19 [TSK-126]",
+      "bottleneck": "Sprint 19 single-writer chain PATTERN.md: TSK-112 -> TSK-119 -> TSK-121 -> TSK-123 -> TSK-126. 5 task seriali su stesso file. La chain e' l'unico path completamente sequenziale del milestone, con 0 possibilita' di parallelizzazione. EP-016 US-062/US-063 (profili + rimozioni) contribuiscono ai 3 task piu' lenti (L, M, M).",
+      "critical_path_eps": "EP-014 (via TSK-112) -> EP-015 (via TSK-119) -> EP-016 (via TSK-121, TSK-123, TSK-126)",
+      "p85_critical_path_contribution": "Stima: 6-8pd seriali nella chain PATTERN.md Sprint 19 (TSK-112=1pd M + TSK-119=1pd M + TSK-121=1pd M + TSK-123=2pd L + TSK-126=1.5pd M = ~6.5pd seriali). Con contingency: ~8.8pd di critical path fisso non parallelizzabile."
+    },
+    "notes": [
+      "STIMA, NON COMMITMENT. P50 non e' una deadline. P85 e' la soglia per pianificazione prudente (EP-010 invariante: una stima e' una distribuzione, non un impegno contrattuale).",
+      "Confidence very_low: stima fragile. method=PERT-only forzato (ADR-025 §C/§D), contingency >=30% enforced. Bias di ottimismo non mitigato (Kahneman/Flyvbjerg).",
+      "Nessun dato storico disponibile: analytics/events/ assente. Questo risultato e' esso stesso un finding del test di dogfooding (T4 GIGO del premortem). EP-013 e' l'azione correttiva strutturale.",
+      "Scenario B (agentic post-flip) ha confidence_override=very_low_extreme per la componente token: senza dati di consumo token reali, la stima e' un ordine di grandezza non calibrato. Il delta ROI apparente (+90% risparmio) non e' difendibile come forecast finanziario.",
+      "Monte Carlo non applicabile: N=0 throughput storico. Diventa applicabile dopo 8+ settimane di eventi EP-009 con analytics/events/ popolato.",
+      "Raccomandazione: rieseguire /estimate dopo completamento EP-013 (accensione analytics) e dopo risoluzione ADR di EP-014 US-056 e EP-015 US-059 (driver principali di varianza). Il nuovo estimate avra' previous_estimate_id: EST-2026-06-08-001."
+    ]
+  }
+}

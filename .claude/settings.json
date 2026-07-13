@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "REPO_ROOT": "${CLAUDE_PROJECT_DIR}"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/analytics/show-session-tokens.py\" --from-hook 2>/dev/null || true",
+            "timeout": 5,
+            "statusMessage": "◉ Token ledger"
+          }
+        ]
+      },
+      {
+        "matcher": "/(dev|lint|run|review)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/tools/suggest-next.py\" --command=\"$CLAUDE_COMMAND\" 2>/dev/null || true",
+            "timeout": 5,
+            "statusMessage": "Runtime suggestions check"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/analytics/harvest-session-tokens.py\" --from-hook --project soli-turnly 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Analytics: harvest token usage (EP-013 dogfooding)"
+          }
+        ]
+      }
+    ]
+  }
+}

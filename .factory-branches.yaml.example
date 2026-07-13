@@ -1,0 +1,22 @@
+# .factory-branches.yaml — Branch Manifest per-sprint (EP-034, PATTERN §15 §Branch Awareness Layer)
+#
+# OPZIONALE. Source of truth "quale branch atteso per ogni target nello sprint corrente".
+# Vince su branch_strategy quando presente (branch-resolver Step 1). Se assente, il branch
+# atteso è derivato puramente da branch_strategy (+ base_branch).
+#
+# USO TIPICO: progetti multi-repo con submodule/sibling, dove serve fissare esplicitamente
+# su quale branch lavora ciascun repo durante lo sprint, per rimuovere ogni ambiguità.
+#
+# Per attivarlo: copia questo file in `.factory-branches.yaml` al root del factory repo e
+# valorizza i target reali (i `name` delle entry di factory.config.yaml.code_paths).
+#
+# Curato a mano (o da un flusso dedicato). NON viene mai scritto da branch-resolver o
+# vcs-preflight-protocol (che sono read-only). vcs-handoff lo legge ma non lo modifica.
+
+sprint: "07"                       # sprint corrente (deve combaciare con lo sprint dei TSK in corso)
+
+targets:
+  # <target-name>: <branch-atteso>
+  backend-api:  tsk-042-add-login-endpoint   # branch dedicato per il lavoro corrente
+  frontend-web: develop                       # sibling sempre su develop
+  db-migrations: sprint-07                     # submodule su branch di sprint

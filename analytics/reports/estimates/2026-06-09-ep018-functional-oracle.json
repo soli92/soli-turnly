@@ -1,0 +1,33 @@
+{
+  "estimate_id": "EST-2026-06-09-002",
+  "type": "estimate",
+  "scope": { "name": "EP-018 FE Functional Oracle", "sprint": 21, "tsk_count": 16, "breakdown": { "S": 9, "M": 7 }, "layer": "docs", "consumer": "agent" },
+  "method": "hybrid",
+  "created": "2026-06-09",
+  "currency": "USD",
+  "intervals": {
+    "execution_only": { "p50": 1.3, "p85": 2.0 },
+    "run_cost_total": { "p50": 5.0, "p85": 9.0 },
+    "budget_ceiling_with_contingency": 12.0
+  },
+  "split": { "execution_agents_sonnet": 1.3, "orchestration_opus": 3.5, "note": "P50; orchestration is the dominant and least-certain driver" },
+  "contingency_pct": 35,
+  "contingency_rationale": "Enforced for confidence:low (ADR-025 §C-D)",
+  "sensitivity_drivers": [
+    { "driver": "orchestrator model (opus vs intermediate)", "impact": "dominant; -40/60% run cost if mechanical steps off-opus" },
+    { "driver": "review/rework iterations", "impact": "+1 task-cost per iteration; assumed 0-1" },
+    { "driver": "cache warmth", "impact": "cold cache raises input cost" },
+    { "driver": "executor model (sonnet assumed)", "impact": "~5x execution if upgraded to opus" }
+  ],
+  "assumptions": [
+    "executors on sonnet-4-6, orchestrator on opus (current mix)",
+    "per-TSK focused context ~30-50K tokens (not session-aggregate)",
+    "0-1 rework iterations; no hard-Q blocks",
+    "no human cost (consumer:agent)",
+    "pricing from analytics/pricing.yaml (sonnet 3/15, opus 15/75, cache 0.1x/1.25x)"
+  ],
+  "reference_class_quality": { "N": 6, "source": "Sprint 20 docs subagent actuals", "similarity": "high", "confidence": "low", "mode": "hybrid-rcf-pert" },
+  "reference_class_data": { "cost_per_tsk_sonnet": { "min": 0.067, "median": 0.093, "max": 0.119 }, "tokens_per_tsk": { "min": 29516, "median": 40000, "max": 52355 } },
+  "time_informative": { "active_session_min": "30-60", "waves": 9, "max_parallel": 4 },
+  "calibration": "review ex-post with /estimate --review-accuracy=EST-2026-06-09-002"
+}

@@ -1,0 +1,249 @@
+{
+  "estimate_id": "EST-2026-06-25-001",
+  "type": "project_estimate",
+  "schema_version": "ADR-024-E",
+  "generated_at": "2026-06-25T00:00:00Z",
+  "generated_by": "estimation-analyst",
+  "scope": {
+    "project_id": "sprint31-semantic-drift",
+    "name": "Sprint 31 — v2.23-research Semantic Drift Detection (EP-031, scope completo)",
+    "epics": ["EP-031"],
+    "user_stories": ["US-107", "US-108", "US-109"],
+    "tasks": 4,
+    "tsk_range": "TSK-206..TSK-209",
+    "sprint": "Sprint 31",
+    "layer": "docs",
+    "routing": "docs -> agent (docs-dev riflessivo, code_path: '.')",
+    "dag": "serial: TSK-206 → TSK-207 → TSK-208 → TSK-209"
+  },
+  "metadata": {
+    "method": "PERT three-point primary + RCF cross-check",
+    "primary_method": "PERT three-point (ADR-025 §C: low confidence → PERT bottom-up primary)",
+    "cross_check_method": "RCF adjusted (N=8 historical sprints, adjusted for extra TSK)",
+    "monte_carlo": false,
+    "monte_carlo_skip_reason": "Wallclock estimate: no throughput-per-task event store. Monte Carlo not applicable for sprint-level wallclock with N=8 sprint-level data points. Applicable when per-TSK granular events are available (analytics/events/). Warning per ADR-026 §D: MC skipped, estimate emitted via PERT+RCF as primary.",
+    "seed": null,
+    "previous_estimate_id": null,
+    "rate_basis": "fully-loaded",
+    "rate_card_path": "analytics/rates.yaml",
+    "pricing_table_path": "analytics/pricing.yaml",
+    "currency": "EUR (human), wallclock minutes (duration)",
+    "estimate_domain": "wallclock duration (minutes from docs-dev launch to commit)",
+    "note": "This estimate covers WALLCLOCK duration (time domain), not agentic USD cost. Cost estimation deferred: no per-TSK token events available for Sprint 31 tasks; analogical projection from reference class would not add precision over the sprint20-antifab cost estimate pattern. Human effort is estimated in minutes."
+  },
+  "reference_class_quality": {
+    "N": 8,
+    "period": "Sprint 23 to Sprint 30 (approx 2026-05 to 2026-06)",
+    "source": [
+      "Sprint 23 (EP-024): 3 TSK S+S+XS → 35 min",
+      "Sprint 24 (EP-023): 3 TSK S+M+S → 45 min",
+      "Sprint 25 (EP-025): 3 TSK M+M+S → 50 min",
+      "Sprint 26 (EP-026): 3 TSK M+M+S → 55 min",
+      "Sprint 27 (EP-029): 3 TSK S+S+XS → 34 min (serial baseline)",
+      "Sprint 28 (EP-027): 3 TSK M+M+S → 117 min (agent wait time included — outlier upper bound)",
+      "Sprint 29 (EP-030): 3 TSK S+M+S → 38 min (parallelized with Sprint 27 — reduced similarity)",
+      "Sprint 30 (EP-028): 3 TSK M+L+S → 8 min (new-file sprint, anomalously fast — outlier lower bound)"
+    ],
+    "similarity": "high",
+    "similarity_rationale": "Same factory (soli-multi-agents-factory), same agent (docs-dev riflessivo), same routing (docs → agent), same code_path ('.'), same layer (docs), same sprint pattern (single wave dispatch per TSK). Sprint 31 differs in: (1) one extra TSK (4 vs 3), (2) research content (EP confidence 38% — TSK-208 semantic-drift-scan-protocol is conceptually more open than prior config edits).",
+    "confidence": "low",
+    "confidence_derivation": "N=8 → bucket=low (1 <= 8 < 10 per rcf_low_confidence_threshold=1, rcf_medium_confidence_threshold=10). similarity=high → no downgrade (factor 1.0, ADR-025 §B). Final: LOW. Note: N=8 is very close to the medium threshold (10); two more sprints of data would push to medium. The low bucket here is purely a count artifact — the qualitative similarity is maximal.",
+    "mode": "PERT bottom-up primary + RCF cross-check (low confidence path, ADR-025 §C)",
+    "warning": "N=8 is below the medium threshold (10). Per ADR-025 §C, low confidence → PERT bottom-up primary, contingency 25-35%. RCF cross-check applied but not used as primary due to N constraint. Two structural outliers in reference class: Sprint 28 (117 min, agent wait) and Sprint 30 (8 min, all-new-file sprint). Both are INCLUDED with appropriate O/P range treatment rather than excluded: they define the plausible tail endpoints of the distribution.",
+    "outlier_analysis": {
+      "sprint_28_117min": "INCLUDED — upper tail anchor. Represents worst-case agent latency / wait time that is plausible in Sprint 31. Not excluded: the docs-dev agent does incur real LLM latency. P=120 min anchored here.",
+      "sprint_30_8min": "INCLUDED as lower-tail data point, but similarity=LOW for Sprint 31 (Sprint 30 was entirely new files with trivial content; Sprint 31 includes complex skill definition). Not used as O anchor — Sprint 31 has a 4-TSK serial chain and research content that prevents Sprint 30 speed.",
+      "sprint_29_38min": "NOTED — executed in parallel with Sprint 27. Standalone wallclock may be similar (~38-45 min) but the parallel execution masks true serial time. Medium similarity. Used as corroboration, not primary anchor."
+    }
+  },
+  "reference_class_derivation": {
+    "unit": "wallclock minutes",
+    "filtered_for_high_sim": [35, 45, 50, 55, 34, 117],
+    "filtered_note": "Excludes Sprint 30 (8 min, all-new-file outlier) and Sprint 29 (38 min, parallelized execution — reduced comparability). N_filtered=6.",
+    "p50_filtered": 47.5,
+    "p75_filtered": 55,
+    "p90_filtered": 117,
+    "tsk_count_adjustment": "+10 min for extra TSK (Sprint 31 has 4 TSK vs 3 in reference; incremental cost of one additional S-M TSK in serial chain)",
+    "rcf_p50_adjusted": 57.5,
+    "rcf_p75_adjusted": 65,
+    "rcf_note": "RCF gives P50~58 min, P75~65 min. PERT P50=63 min sits slightly above RCF P50, reflecting the research premium on M=55 vs the mechanical reference sprints. Convergence zone: 58-65 min for central estimate."
+  },
+  "pert_decomposition": {
+    "unit": "wallclock minutes (serial chain, single docs-dev agent)",
+    "sprint_level_pert": {
+      "O": 40,
+      "M": 55,
+      "P": 120,
+      "O_rationale": "Best case: docs-dev executes 4 TSK serial efficiently; TSK-206/209 (S-size) are fast config/template writes; TSK-207/208 (M-size) have clear DoD. New files (TSK-208/209) fast. Threshold: cannot go below Sprint 24 (45 min for 3 TSK) given extra TSK and research content → floor at 40 min.",
+      "M_rationale": "Most likely: anchored on Sprint 24-26 median (45-55 min for 3 TSK M+M+S) + 10 min adjustment for extra TSK + small research premium on TSK-208 (skill definition, conceptually open). M=55 min.",
+      "P_rationale": "Pessimistic: Sprint 28 analog (117 min agent wait) + extra TSK + research content. TSK-208 (semantic-drift-scan-protocol) is the most open-ended task — its 5-step skill must define scan procedures without existing empirical validation (EP confidence 38%). If docs-dev agent hits definition ambiguity on TSK-208 or needs multiple lint passes, P=120 min is plausible. Serial chain means no parallelism to absorb delays.",
+      "E_P50": 63.3,
+      "sigma": 13.3,
+      "variance": 177.8,
+      "P85": 77.1,
+      "P95": 85.2,
+      "formula": "E=(O+4M+P)/6=(40+220+120)/6=63.3. sigma=(P-O)/6=(120-40)/6=13.3. P85=E+1.036*sigma=63.3+13.8=77.1. P95=E+1.645*sigma=85.2."
+    },
+    "tsk_level_sizing": {
+      "note": "Per-TSK PERT decomposition anchored on default_M_per_layer docs=1h from factory.config.yaml. Expressed in minutes for consistency with wallclock reference class.",
+      "tasks": [
+        {
+          "id": "TSK-206",
+          "title": "Blocco wiki_lint.semantic_check: in factory.config.yaml + runbook prerequisiti",
+          "size": "S",
+          "us": "US-107",
+          "O_min": 8,
+          "M_min": 12,
+          "P_min": 22,
+          "E_min": 13.0,
+          "sigma_min": 2.3,
+          "rationale_P": "factory.config.yaml edit is mechanical but a new top-level block wiki_lint: requires careful placement + runbook file creation. If wiki_lint: conflicts with existing schema validation checks, P inflates."
+        },
+        {
+          "id": "TSK-207",
+          "title": "Check 4af INFO-only in lint-checks.md",
+          "size": "M",
+          "us": "US-107",
+          "O_min": 10,
+          "M_min": 16,
+          "P_min": 32,
+          "E_min": 17.7,
+          "sigma_min": 3.7,
+          "rationale_P": "lint-checks.md is a large file (multiple check series); inserting Check 4af in the 4a* series requires reading the file structure, finding the correct slot, and ensuring the check wording is INFO-only (not WARNING/ERROR). Single-writer conflict makes re-runs expensive."
+        },
+        {
+          "id": "TSK-208",
+          "title": "Skill semantic-drift-scan-protocol.md (5 step) + comando /semantic-drift-scan",
+          "size": "M",
+          "us": "US-108",
+          "O_min": 12,
+          "M_min": 18,
+          "P_min": 45,
+          "E_min": 21.2,
+          "sigma_min": 5.5,
+          "rationale_P": "Most conceptually open TSK in sprint. The semantic-drift-scan skill has no predecessor skill to copy; it must define 5 steps for an experimental (38% confidence) capability. Docs-dev agent may need multiple iterations to get the skill structure right (experimental marker, step definitions, tool invocation pattern). P=45 min if ambiguity forces a rework of step 3-4."
+        },
+        {
+          "id": "TSK-209",
+          "title": "Template ADR-EP031-001 go/no-go con sezioni PLACEHOLDER",
+          "size": "S",
+          "us": "US-109",
+          "O_min": 5,
+          "M_min": 9,
+          "P_min": 21,
+          "E_min": 10.3,
+          "sigma_min": 2.7,
+          "rationale_P": "ADR template is lightweight (PLACEHOLDER sections). But naming convention (ADR-EP031-001 vs standard ADR-NNN) may require cross-referencing the ADR directory structure. If docs-dev misfiles or needs to check naming constraints, P=21 min."
+        }
+      ],
+      "per_tsk_sum": {
+        "O_sum": 35,
+        "M_sum": 55,
+        "P_sum": 120,
+        "E_sum_P50": 62.2,
+        "note": "Per-TSK sum corroborates sprint-level PERT (62 vs 63 min — within 2%). Internally consistent."
+      }
+    }
+  },
+  "estimate": {
+    "estimate_id": "EST-2026-06-25-001",
+    "intervals": {
+      "wallclock_duration": {
+        "unit": "minutes (from docs-dev launch to commit)",
+        "P50": 63,
+        "P85": 77,
+        "P95": 85,
+        "P25": 52,
+        "P75": 70,
+        "low": 40,
+        "likely": 58,
+        "high": 77,
+        "band_note": "P25 estimated as E - 0.674*sigma = 63 - 9 = 54; P75 as E + 0.674*sigma = 63 + 9 = 72. Low=O=40 (optimistic bound). Likely=58 (convergence of PERT E and RCF-adjusted P50). High=P85=77 (planning ceiling). The 40-77 min band is relatively narrow: this is a well-typed docs sprint (precedenti seriali numerosi) with a moderate research premium.",
+        "rcf_cross_check": {
+          "p50_rcf_adjusted": 57,
+          "p75_rcf_adjusted": 65,
+          "convergence": "PERT P50=63 and RCF P50_adj=57 agree within 10%. Band overlap: 57-65 min (convergence zone). PERT slightly higher due to research premium on M. Use PERT P50=63 as primary (low confidence → PERT primary per ADR-025 §C)."
+        }
+      },
+      "human_effort": {
+        "unit": "minutes (operator supervision)",
+        "P50_min": 20,
+        "P85_min": 30,
+        "breakdown": {
+          "sprint_kickoff_review": "5 min — read wave plan, confirm no blocking prerequisite",
+          "wave_monitoring": "8 min — 4 waves x 2 min passive monitoring (no gates, max 1 TSK/wave per sprint plan)",
+          "final_review": "7 min — review commit diff + lint output + check ADR-EP031-001 PLACEHOLDER structure",
+          "contingency_decision": "+10 min P85 — potential need to validate TSK-208 skill definition quality manually (research sprint, EP confidence 38%)"
+        },
+        "note": "Sprint 31 has NO parallel_gate_threshold gates (all 4 waves = 1 TSK each, never >= parallel_gate_threshold: 3). Human effort is near-zero supervision only. No architecture decisions, no model choices, no external system calls requiring human approval."
+      }
+    },
+    "split": {
+      "agentic_pct": 96,
+      "human_pct": 4,
+      "rationale": "4 TSK all consumer:agent (docs-dev riflessivo). No human-residuo TSK in this sprint (unlike EP-014..EP-016 sprints with consumer:human TSK). Human fraction = supervisor overhead only (~20 min / ~63 min total clock = ~4%). Agentic fraction dominant: even TSK-208 (research skill) is fully agent-executed; the research content is defined by the existing US/EP context, not requiring new human decisions during execution."
+    },
+    "assumptions": [
+      "model: docs-dev agent using current model (claude-sonnet-4-6 or equivalent; factory.config.yaml default_model: 'current'). If model changes to a slower or less capable model, M increases ~15-20%.",
+      "serial_execution: DAG is fully serial (TSK-206→207→208→209). No parallelism possible. Each wave = 1 TSK. Wallclock = sum of sequential TSK durations + inter-wave handoff overhead (~2 min/handoff x 3 handoffs = ~6 min included in M estimate).",
+      "no_external_api_calls: no Figma API, no GitHub publisher, no Playwright runtime, no embedding API calls during sprint execution. TSK-208 creates a skill for a future semantic-drift-scan tool, but does NOT execute the scan itself. Tool calls are Read/Edit/Write/Bash (file ops only).",
+      "lint_passes: 1 lint pass per TSK (docs-dev riflessivo does self-lint inline). If Check 4af (TSK-207) inadvertently triggers WARNING on existing lint, a second pass is required (+10 min, partially captured in P values).",
+      "tsk_208_scope: skill semantic-drift-scan-protocol.md is a 5-step procedural document (status:experimental). It does NOT require implementing an embedding model or running similarity computations. It defines the PROCEDURE for a future researcher to follow. This keeps TSK-208 in the M tier, not L.",
+      "adr_ep031_001_scope: TSK-209 creates an ADR TEMPLATE with PLACEHOLDER sections, not a completed ADR. The go/no-go decision is explicitly deferred (EP confidence 38%). The template is a stub — no data to fill in during Sprint 31.",
+      "compression_layer: compression.output.enabled=false (factory.config.yaml). No caveman compression active — docs-dev receives full context. No compression overhead.",
+      "analytics_measurement: analytics.measurement.enabled=true, dogfooding.enabled=true. Cost events will be recorded during execution (ADR-039 idempotency). These events will contribute to the reference class for future sprint estimates (N will grow toward medium threshold at N=10)."
+    ],
+    "contingency_pct": 30,
+    "contingency_basis": "N=8, confidence=LOW (ADR-025 §C: low → contingency 25-35%). Using 30% as central value within the range. Rationale: (1) Research sprint (EP confidence 38%) introduces definitional uncertainty not present in mechanical config sprints — the skill definition in TSK-208 may require rework if the experimental framing proves ambiguous; (2) N=8 is at the boundary of low/medium but firmly in the low bucket; (3) Serial DAG means any single TSK delay cascades to total wallclock. The 30% contingency adds ~19 min to P85, yielding a planning ceiling of ~100 min.",
+    "budget_prudente": {
+      "wallclock_P85_plus_contingency_min": 100,
+      "formula": "P85=77 min * 1.30 contingency = 100 min",
+      "note": "Planning ceiling for sprint wallclock. Round to 100 min (1h40) for scheduling purposes. Block a 2-hour window for safety. Human effort ceiling: 30 min supervision within that window."
+    },
+    "sensitivity_drivers": [
+      {
+        "rank": 1,
+        "driver": "TSK-208_skill_definition_ambiguity",
+        "impact": "+30 min on wallclock if worst-case (P=45 vs E=21 for TSK-208 alone)",
+        "description": "TSK-208 is the dominant risk. The semantic-drift-scan-protocol skill has no template to copy from; it defines a 5-step experimental procedure for embedding-based semantic drift detection (EP confidence 38%). If the docs-dev agent needs multiple iterations to define the step structure, step 3 (scan execution parameters) or step 5 (output format), wallclock for TSK-208 doubles. This is the only task where definitional ambiguity is intrinsic to the research framing.",
+        "mitigation": "Ensure TSK-208 DoD is precise about what the skill OUTPUT looks like (e.g., 'a 5-section Markdown file following the pattern of existing skill files in .claude/skills/'). Ambiguity in the PLACEHOLDER structure is acceptable — it is the explicit intent. The risk is structural: does the docs-dev know what a 'semantic scan step' looks like in this factory's vocabulary?"
+      },
+      {
+        "rank": 2,
+        "driver": "serial_dag_cascade_effect",
+        "impact": "Each delayed TSK delays all successors. If TSK-207 takes 32 min (P), TSK-208 starts late → total sprint wallclock approaches P=120 min.",
+        "description": "With a fully serial DAG and no parallelism, variance accumulates linearly. Sigma_total=sqrt(sum of variances) = sqrt(2.3^2 + 3.7^2 + 5.5^2 + 2.7^2) = sqrt(5.3+13.7+30.3+7.3) = sqrt(56.6) = 7.5 min. But PERT additivity uses sigma_sprint=(P-O)/6=13.3 min which already captures the cascade.",
+        "mitigation": "No mitigation possible for serial DAG (single-writer constraint on lint-checks.md). Accept the serial structure and plan the 100-min budget window accordingly."
+      },
+      {
+        "rank": 3,
+        "driver": "reference_class_exclusion_of_sprint_28_outlier",
+        "impact": "If Sprint 28 (117 min) is the true distribution mode (not outlier), P50 could be 60-80 min and P85 could be 100+ min.",
+        "description": "Sprint 28's 117-min wallclock was flagged as 'includes agent wait time'. If that wait time is systemic (LLM latency under load), not incidental, then the reference class median of ~47 min understates the true distribution. The PERT P=120 min already captures this scenario at the tail.",
+        "mitigation": "If execution time matters operationally, schedule Sprint 31 during low-load periods (morning session, fresh conversation context with warm cache). The wait-time risk is infrastructure, not estimation error."
+      },
+      {
+        "rank": 4,
+        "driver": "research_content_ep_confidence_38pct",
+        "impact": "If EP-031 scope is revised during sprint execution (e.g., TSK-208 skill requires new architectural decisions discovered mid-execution), sprint may pause for human gate (+N/A — out of scope for this estimate).",
+        "description": "EP confidence 38% means the approach (embedding similarity) may prove infeasible or require a different architecture. TSK-209 (ADR template with go/no-go sections) is explicitly designed to capture this uncertainty. However, if during TSK-208 execution the docs-dev discovers that the skill cannot be written without resolving an architectural ambiguity, a human gate is required. This scenario is NOT included in the wallclock estimate (it would be an ABORT/ESCALATE, not a slow run).",
+        "mitigation": "Sprint 31 goal is explicitly a research template (not a deployable capability). If docs-dev hits architectural ambiguity on TSK-208, the correct action is to open a Question (apri-question skill) and abort TSK-208, proceeding to TSK-209 with a simplified skill stub. This keeps wallclock within P85 bounds."
+      }
+    ],
+    "reference_class_quality": {
+      "N": 8,
+      "period": "Sprint 23 to Sprint 30 (approx 2026-05 to 2026-06)",
+      "similarity": "high",
+      "confidence": "low",
+      "mode": "PERT bottom-up primary + RCF cross-check",
+      "warning": "N=8 < medium threshold (10). LOW confidence per ADR-025 §C → PERT primary, contingency 25-35% (using 30%). Two structural outliers included: Sprint 28 (117 min, upper tail anchor) and Sprint 30 (8 min, lower bound — low similarity for Sprint 31). Reference class is sprint-level wallclock aggregates, not per-TSK granular events. Per-TSK variation is estimated via PERT three-point elicitation, not measured. After Sprint 31, N will be 9 (still low bucket; N=10 unlocks medium confidence for Sprint 32)."
+    },
+    "notes": [
+      "STIMA, NON COMMITMENT. P50=63 min e P85=77 min non sono deadline. Una stima e' una distribuzione, non un impegno contrattuale (EP-010 invariante).",
+      "Stima in MINUTI wallclock, non in costi USD. Il dominio di questa stima e' temporale: quanto ci vuole dal lancio del docs-dev al commit. La stima di costo USD e' deferred (nessun dato per-TSK disponibile per Sprint 31; cf. Sprint 20 estimate EST-2026-06-09-001 per il pattern di costo USD).",
+      "Research premium: Sprint 31 e' marcato 'v2.23-research' con EP confidence 38%. Il M=55 min (vs 45-50 min per sprint meccanici di pari dimensione) riflette questo premium. Non e' pessimismo ingiustificato: TSK-208 e' genuinamente piu' aperto dei task di config editing.",
+      "Monte Carlo non disponibile: nessun dato per-TSK granulare nell'event store. P95=85 min calcolato via PERT gaussiana (E+1.645*sigma). Applicabile dopo accumulo di eventi per-TSK in analytics/events/.",
+      "Calibrazione futura: dopo Sprint 31, registrare i tempi effettivi per-TSK. Con N=9 sprint il bucket rimane low; N=10 (Sprint 32) porta a medium. Il reference class matura con ogni sprint docs-agent eseguito."
+    ]
+  }
+}

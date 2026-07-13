@@ -1,0 +1,73 @@
+# =============================================================================
+# analytics/rates.yaml — Rate card (costi orari per ruolo umano)
+# =============================================================================
+# EP-009 (Task Analytics & Measurement) — ADR-022 §C
+# Capability: [[task-analytics-cost-estimation-capability]]
+#   wiki/concepts/task-analytics-cost-estimation-capability.md
+#
+# TEMPLATE opt-in (R.P3): questo è un *.template. Copialo in
+# `analytics/rates.yaml` e adattalo. Finché il file non-template non esiste e
+# `analytics.measurement.enabled` resta false, nulla è attivato (no lint ERROR).
+#
+# Single-writer logico: PM/Arch della factory derivata, **manuale via PR**.
+#   Nessun tool del framework modifica questo file a runtime.
+# Lettori: compute_human_cost (US-034), policy dati (ADR-023) — via la skill
+#          `cost-and-time-analytics` (US-036).
+#
+# Versioning: **git history** è lo storico autorevole. NON esiste un campo
+#   `version:` interno. Ogni cambio = un commit convenzionale
+#   (es. `chore(rates): bump senior-engineer hourly_rate 2026-04-01`).
+#
+# valid_from semi-aperto a destra (ADR-022 §E): una entry `rates[]` è valida dal
+#   suo `valid_from` finché la entry **successiva** non la sostituisce. Lista
+#   ordinata ascendente per `valid_from`. Almeno una entry per ruolo.
+#
+# No retroactive edit (ADR-022 §E): NON modificare una entry passata (altereresti
+#   costi storici già calcolati). Per cambiare tariffa: appendi una nuova entry.
+#
+# PII / actor_id: `actor_id` (persona reale, es. "mario.rossi") **NON vive qui**.
+#   La mappa actor_id → role_id sta in
+#   `factory.config.yaml.analytics.measurement.actors_map` oppure in
+#   `analytics/actors.yaml` (gitignore opt-in per GDPR) — vedi ADR-023 §C/§D.
+#   Qui ci sono solo ruoli astratti e tariffe (config commerciale, no PII).
+# =============================================================================
+
+currency: EUR                          # ISO 4217. Single currency per file (ADR-022 §C). Default EUR.
+
+rate_basis: fully-loaded               # OBBLIGATORIO a livello file. Valori: fully-loaded | bill-rate.
+                                       #   fully-loaded (default) = costo interno totale dell'azienda.
+                                       #   bill-rate = prezzo fatturato al cliente.
+                                       # Una factory che serve ENTRAMBE le basis crea due file
+                                       #   (rates-fully-loaded.yaml + rates-bill-rate.yaml) e configura
+                                       #   analytics.measurement.rate_card_path di conseguenza (ADR-022 §C).
+                                       # rate_basis è documentato in ogni report che usa la rate card (ADR-023).
+
+roles:
+  - id: senior-engineer                # canonical role id: lowercase, kebab-case.
+    display_name: "Senior Software Engineer"
+    aliases:                           # varianti accettate, risolte a `id` (stesso pattern di pricing.yaml).
+      - senior-eng
+      - sr-engineer
+    rates:                             # lista ordinata asc per valid_from. Almeno una entry obbligatoria.
+      - valid_from: 2026-01-01         # ISO-8601 date (YYYY-MM-DD). OBBLIGATORIO.
+        hourly_rate: 85.0              # EUR/h, interpretata secondo rate_basis (qui: fully-loaded).
+      - valid_from: 2026-04-01         # entry successiva → la precedente diventa implicitamente valid_to: 2026-03-31.
+        hourly_rate: 90.0
+
+  - id: tech-lead
+    display_name: "Technical Lead"
+    aliases:
+      - tl
+      - lead-engineer
+    rates:
+      - valid_from: 2026-01-01
+        hourly_rate: 110.0
+
+  - id: qa-engineer
+    display_name: "QA Engineer"
+    aliases:
+      - qa-eng
+      - quality-engineer
+    rates:
+      - valid_from: 2026-01-01
+        hourly_rate: 70.0

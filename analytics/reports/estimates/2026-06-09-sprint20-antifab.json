@@ -1,0 +1,274 @@
+{
+  "estimate_id": "EST-2026-06-09-001",
+  "type": "project_estimate",
+  "schema_version": "ADR-024-E",
+  "generated_at": "2026-06-09T00:00:00Z",
+  "generated_by": "estimation-analyst",
+  "scope": {
+    "project_id": "sprint20-antifab",
+    "name": "Sprint 20 — v2.19.x Anti-fabbricazione UX/UI (ADR-063)",
+    "epics": ["EP-008"],
+    "user_stories": ["US-067", "US-049"],
+    "tasks": 8,
+    "tsk_range": "TSK-133..TSK-140",
+    "sprint": "Sprint 20",
+    "layer": "docs",
+    "routing": "docs -> agent (docs-dev riflessivo, code_path: '.')",
+    "adr_refs": ["ADR-063"]
+  },
+  "metadata": {
+    "method": "RCF+PERT hybrid",
+    "primary_method": "PERT three-point with RCF-anchored M values",
+    "cross_check_method": "raw-session-scale",
+    "monte_carlo": false,
+    "monte_carlo_skip_reason": "N=3 session events, insufficient throughput history for meaningful Monte Carlo simulation. Applicable after 8+ weeks of per-TSK granular events.",
+    "seed": null,
+    "previous_estimate_id": null,
+    "rate_basis": "fully-loaded",
+    "rate_card_path": "analytics/rates.yaml",
+    "pricing_table_path": "analytics/pricing.yaml",
+    "currency": "USD (agentic) / EUR (human)",
+    "pricing_model": "claude-opus-4-8 @ $5.00/1M input, $25.00/1M output, $0.50/1M cache_read, $6.25/1M cache_write (pricing.yaml valid_from 2026-01-01)"
+  },
+  "reference_class_quality": {
+    "N": 3,
+    "period": "2026-06-04 to 2026-06-08",
+    "source": [
+      "session:f10584c7 (2026-06-04, soli-factory, $82.45, partial docs + framework work)",
+      "session:493f2b29 (2026-06-05, soli-factory, $32.58, docs/framework work)",
+      "session:2dcc6e02 (2026-06-08, soli-factory, $85.95, 39 TSK docs milestone — RUN-REPORT cites ~$201 total)"
+    ],
+    "similarity": "high",
+    "similarity_rationale": "Same factory (soli-multi-agents-factory), same agent type (docs-dev), same code_path ('.'), same layer (docs), same .claude/ file tree scope. Minor difference: Sprint 20 includes TSK-136 L (new bash scripts) which is marginally heavier than pure-text edits in v2.19 milestone.",
+    "confidence": "medium",
+    "confidence_derivation": "N=3 -> bucket=low (1-9 range, ADR-025 §A-C). similarity=high -> upgrade +1 -> medium. Floor never goes below very_low.",
+    "mode": "RCF+PERT (medium confidence path per ADR-025 §C)",
+    "warning": "N=3 is below the medium threshold (10-29). The upgrade to medium is justified by high similarity but remains fragile. Per-TSK granular events not available: the 3 data points are session-level aggregates (full sessions, not per-TSK). Dividing session cost by TSK count introduces systematic undercount (session overhead diluted across TSK divisor). The PERT P-values mitigate this via pessimistic scenario. Bias of optimism partially mitigated (Kahneman/Flyvbjerg) but not eliminated with N=3."
+  },
+  "reference_class_derivation": {
+    "session_2026_06_08_cost_usd": 85.95,
+    "session_attributed_tsk_count": 39,
+    "raw_per_tsk_usd": 2.20,
+    "overhead_adjustment_fraction": 0.70,
+    "note": "The 2026-06-08 session cost of $85.95 (confirmed via pricing.yaml rates applied to event tokens) covers 39 TSK docs + orchestration overhead + final lint + analytics instrumentation. Adjusting to 70% pure-dev execution: $60.2 / 39 TSK = $1.54/TSK. However, the full session divides $85.95 / 39 = $2.20/TSK. Using $3.61/TSK (adjusted from 3-session total ~$201 / 39 at 70% dev fraction) as PERT M anchor for medium-size TSK. Cross-check anchor: $2.20/TSK (raw). The two anchors produce a P50 range of $18-$40; central estimate $29.",
+    "three_session_total_usd": 200.98,
+    "three_session_adjusted_per_tsk_usd": 3.61
+  },
+  "pert_decomposition": {
+    "unit": "USD (agentic cost)",
+    "anchor_per_tsk_usd": 3.61,
+    "anchor_source": "adjusted reference class (3-session total $200.98, 70% pure-dev, 39 TSK)",
+    "tasks": [
+      {
+        "id": "TSK-133",
+        "title": "Fail-loud Step 1 ux-ui-review-protocol (ADR-063 §A)",
+        "size": "S",
+        "priority": "P0",
+        "O": 2.53,
+        "M": 3.97,
+        "P": 7.22,
+        "E": 4.27,
+        "sigma": 0.78,
+        "variance": 0.61,
+        "rationale_P": "Worst-case: lint failure forces re-run, Step 1 edit triggers cross-ref check with ADR-063 §C, 2x tool calls."
+      },
+      {
+        "id": "TSK-134",
+        "title": "Guard evidence-provenance Step 5 ux-ui-review-protocol (ADR-063 §B)",
+        "size": "M",
+        "priority": "P1",
+        "O": 3.97,
+        "M": 6.49,
+        "P": 14.43,
+        "E": 7.40,
+        "sigma": 1.74,
+        "variance": 3.03,
+        "rationale_P": "Worst-case: schema update triggers review of all finding references in related docs, multiple iterations on evidence field definition."
+      },
+      {
+        "id": "TSK-135",
+        "title": "ux-ui-reviewer.md: Read/Grep + STOP-condition §A (ADR-063 §C)",
+        "size": "XS",
+        "priority": "P0",
+        "O": 1.44,
+        "M": 2.53,
+        "P": 4.69,
+        "E": 2.71,
+        "sigma": 0.54,
+        "variance": 0.29,
+        "rationale_P": "Worst-case: frontmatter tools list update triggers lint check on agent schema, minor re-run."
+      },
+      {
+        "id": "TSK-136",
+        "title": "Backing eseguibile reale 3 tool visivi (ADR-063 §D)",
+        "size": "L",
+        "priority": "P1",
+        "O": 5.41,
+        "M": 12.63,
+        "P": 28.86,
+        "E": 14.13,
+        "sigma": 3.91,
+        "variance": 15.29,
+        "rationale_P": "Worst-case: Playwright dependency check requires iterative scripting, check_design_system_conformance.sh parsing logic needs refinement, agent registration update triggers cross-reference fix in skill. 3 new scripts from scratch — structurally different from pure text edits. P=8x anchor justified.",
+        "note": "TSK-136 is the dominant cost driver (~35% of sprint P50). High variance due to Playwright deps uncertainty and script logic complexity."
+      },
+      {
+        "id": "TSK-137",
+        "title": "lint-checks.md: Check evidence-provenance (ADR-063 §B)",
+        "size": "S",
+        "priority": "P2",
+        "O": 2.53,
+        "M": 3.97,
+        "P": 9.02,
+        "E": 4.57,
+        "sigma": 1.08,
+        "variance": 1.17,
+        "rationale_P": "Worst-case: determining correct Check numbering sequence requires reading multiple sections of lint-checks.md, minor rework on check definition wording."
+      },
+      {
+        "id": "TSK-138",
+        "title": "Aggiornare ADR-020 + nota PATTERN (ADR-063 §Conseguenze)",
+        "size": "XS",
+        "priority": "P2",
+        "O": 1.44,
+        "M": 2.53,
+        "P": 5.41,
+        "E": 2.83,
+        "sigma": 0.66,
+        "variance": 0.44,
+        "rationale_P": "Worst-case: PATTERN.md section references need careful scope check before adding note, minor iteration."
+      },
+      {
+        "id": "TSK-139",
+        "title": "(Opz) Rivalutare model ux-ui-reviewer (ADR-063 §E)",
+        "size": "XS",
+        "priority": "P3",
+        "O": 1.08,
+        "M": 2.16,
+        "P": 4.33,
+        "E": 2.34,
+        "sigma": 0.54,
+        "variance": 0.29,
+        "rationale_P": "Worst-case: evaluation reveals Scenario B (model upgrade), requiring justification note + config update."
+      },
+      {
+        "id": "TSK-140",
+        "title": "(micro) cross-ref ADR-032 §B ↔ ADR-062",
+        "size": "XS",
+        "priority": "P3",
+        "O": 1.08,
+        "M": 1.80,
+        "P": 3.61,
+        "E": 1.98,
+        "sigma": 0.42,
+        "variance": 0.18,
+        "rationale_P": "Worst-case: ADR-032 frontmatter format needs review to add related field correctly."
+      }
+    ],
+    "sprint_total": {
+      "O": 19.48,
+      "M": 36.08,
+      "P": 77.57,
+      "E_P50": 40.23,
+      "variance_total": 21.30,
+      "sigma_total": 4.62,
+      "formula": "E=(O+4M+P)/6, var=((P-O)/6)^2, additivity PERT"
+    }
+  },
+  "estimate": {
+    "estimate_id": "EST-2026-06-09-001",
+    "intervals": {
+      "agentic_cost": {
+        "unit": "USD",
+        "model": "claude-opus-4-8",
+        "P50": 40.23,
+        "P85": 45.01,
+        "P95": 47.82,
+        "low": 18.0,
+        "likely": 29.0,
+        "high": 45.01,
+        "note": "P50=E_PERT=$40.23. P85=E+1.036*sigma=$45.01. P95=E+1.645*sigma=$47.82. Wide band declared: low=$18 (raw-session-scale, optimistic cache), likely=$29 (midpoint of two anchors), high=$45 (PERT P85). Uncertainty band $18-$45 reflects the dual-anchor uncertainty from session-level (not per-TSK granular) reference class. Actual cost may converge to low bound if sprint runs in one high-cache session (70%+ cache_read ratio observed in reference sessions).",
+        "cross_check": {
+          "method": "raw-session-scale",
+          "raw_per_tsk_usd": 2.20,
+          "total_weight_s_units": 8.0,
+          "P50_raw_scale": 17.63,
+          "note": "Raw session anchor: $2.20/TSK * 8.0 weight units = $17.63. This is the floor estimate assuming same cache behavior and no overhead adjustment."
+        }
+      },
+      "human_cost": {
+        "unit": "EUR",
+        "rate_ref": "analytics/rates.yaml: senior-engineer fully-loaded 90 EUR/h (valid_from 2026-04-01)",
+        "P50_hours": 1.5,
+        "P50_eur": 135,
+        "P85_hours": 2.0,
+        "P85_eur": 180,
+        "breakdown": {
+          "TSK-139_model_eval": "0.5h — TSK-139 is explicitly decision-gated (Scenario A vs B model choice)",
+          "TSK-138_adr_review": "0.25h — ADR-020 amendment review gate before merge",
+          "sprint_oversight": "0.75h — wave approvals, parallel_gate_threshold gate, final lint review"
+        }
+      }
+    },
+    "split": {
+      "agentic_pct": 97,
+      "human_pct": 3,
+      "rationale": "8 TSK consumer:agent (docs-dev riflessivo). Human time limited to: TSK-139 model decision gate (genuinely non-delegable judgement call), TSK-138 ADR-020 amendment review, sprint oversight. Agentic fraction dominant because all 8 TSK are docs-layer with clear DoD and no external system calls (except TSK-136 Playwright which is a script, not an interactive decision)."
+    },
+    "assumptions": [
+      "model: claude-opus-4-8 (pricing.yaml valid_from 2026-01-01: $5.00/1M input, $25.00/1M output, $0.50/1M cache_read, $6.25/1M cache_write). This is the model observed in all reference-class sessions. If model changes (e.g., sonnet-4-6 for some agents), agentic cost drops ~40%.",
+      "cache_hit_ratio: ~60-70% cache_read (observed in reference sessions: session:2dcc6e02 cache_read=101M vs input=130K, ratio ~780:1 — extreme compression layer). Sprint 20 operates on same codebase: similar cache behavior expected.",
+      "iteration_count: 1 review/lint pass per TSK (no CQRL in scope; docs-dev riflessivo does self-lint inline). If lint reveals cross-file inconsistencies, TSK-133/134 may require a second pass.",
+      "TSK-136_scope: 3 bash scripts from scratch (capture_screenshot.sh, extract_design_tokens.sh, check_design_system_conformance.sh) + agent registration update. Script logic is straightforward (set -euo pipefail + dep check + main logic). Playwright wrapper for capture_screenshot is the riskiest sub-task (external dep). If Playwright stub is acceptable (fail-loud on missing dep, no real implementation), P converges toward M.",
+      "TSK-139_optional: P3 priority; if skipped, sprint total P50 drops to ~$37.89 (remove $2.34). Included in main estimate as declared optional.",
+      "no_external_API_calls: no Figma API, no GitHub publisher, no Playwright runtime execution during docs-dev sprint. Tool calls are Read/Edit/Write/Bash (file ops only). Zero tool pricing overhead (tools cost $0 per pricing.yaml).",
+      "sprint_execution_mode: parallel within same session (wave dispatch, scheduler.enabled=true). TSK-138 depends on TSK-133+TSK-135 per frontmatter. All others can run in parallel. Single session expected (no multi-session overhead)."
+    ],
+    "contingency_pct": 20,
+    "contingency_basis": "N=3 sessions (medium confidence after high-similarity upgrade). ADR-025 §C: medium -> contingency 15-25%. Using 20% as central value. Rationale: (1) N=3 is the low end of medium confidence -> conservatism warranted; (2) TSK-136 L has high intrinsic variance (sigma=$3.91, ~28% of sprint sigma) — Playwright scripting uncertainty; (3) session-level reference class (not per-TSK granular) introduces systematic estimation error. Reduced from 35% (EST-2026-06-08-001 N=0) because N>0 now provides empirical anchor.",
+    "budget_prudente": {
+      "P85_plus_contingency_usd": 54.01,
+      "formula": "$45.01 P85 * 1.20 contingency = $54.01",
+      "note": "Planning ceiling for sprint agentic cost. Includes P85 scenario + 20% buffer. Does not include human cost (EUR, separate budget line)."
+    },
+    "sensitivity_drivers": [
+      {
+        "rank": 1,
+        "driver": "TSK-136_L_playwright_scripting",
+        "impact": "+$14.73 vs P50 if worst-case (P=$28.86 vs E=$14.13). Represents 55% of sprint variance.",
+        "description": "TSK-136 is the single largest cost driver: creating 3 bash scripts including a Playwright wrapper. If Playwright scripting requires iterative debugging or the check_design_system_conformance.sh grep/awk logic needs refinement, cost spikes. This TSK has P/O ratio of 5.3 (highest in sprint).",
+        "mitigation": "Scope capture_screenshot.sh as a thin wrapper (fail-loud on missing Playwright, no real browser launch in sprint context). The DoD requires fail-loud on dep missing, not a working Playwright integration. This brings M->O, collapsing variance."
+      },
+      {
+        "rank": 2,
+        "driver": "reference_class_granularity",
+        "impact": "±$22 band ($18-$40 P50) — dominant uncertainty source.",
+        "description": "The reference class is session-level, not per-TSK. Dividing $201/39 TSK includes orchestration overhead, lint runs, premortem, analytics instrumentation — work not in Sprint 20 scope. The overhead adjustment (70% pure-dev) is an assumption, not a measurement. If overhead was actually 50% of session (not 30%), the per-TSK anchor rises to $5.15 and sprint P50 climbs to ~$57.",
+        "mitigation": "After Sprint 20 completes, add per-TSK granular events to analytics/events/. This directly calibrates the reference class for Sprint 21 onwards."
+      },
+      {
+        "rank": 3,
+        "driver": "cache_hit_ratio",
+        "impact": "-30% to -50% on agentic cost if cache_read stays at 780:1 ratio (as observed in reference sessions).",
+        "description": "The reference sessions show extreme cache_read ratios (101M cache_read vs 130K input for session:2dcc6e02). Sprint 20 operates on the same codebase; if the cache remains warm, effective cost per token is dominated by cache_read ($0.50/1M vs $5.00/1M input). This is already baked into the reference class but worth declaring explicitly.",
+        "mitigation": "Run Sprint 20 within a single session to maximize cache reuse. Cache warm-up cost is amortized over all 8 TSK."
+      }
+    ],
+    "reference_class_quality": {
+      "N": 3,
+      "period": "2026-06-04 to 2026-06-08",
+      "similarity": "high",
+      "confidence": "medium",
+      "mode": "RCF+PERT",
+      "warning": "N=3 (low bucket, upgraded to medium for high similarity). Reference class is session-level aggregate, not per-TSK granular. Per-TSK variation within sessions is unobservable from current data. Wide band ($18-$45 P50) reflects this limitation. NOT a very_low confidence (N>0, data exists), but NOT a high confidence either (N<10, no per-TSK breakdown). Flyvbjerg bias partially mitigated by empirical anchor but optimism bias residual."
+    },
+    "notes": [
+      "STIMA, NON COMMITMENT. P50=$40.23 non e' una deadline. P85=$45.01 e' la soglia per pianificazione prudente (EP-010 invariante: una stima e' una distribuzione, non un impegno contrattuale).",
+      "Primo estimate post-EP-013: per la prima volta la reference class non e' N=0 (cfr EST-2026-06-08-001 dove N=0 era il finding principale di dogfooding). N=3 e' ancora basso ma l'esistenza di dati reali riduce il bias strutturale vs pure PERT-elicitation.",
+      "Wide band dichiarata: $18-$45 (low/likely/high). La banda larga riflette la granularita' session-level (non per-TSK) dei dati di riferimento. Non e' falsa precisione: e' onesta dichiarazione del limite del dato.",
+      "TSK-136 L domina: ~35% del P50 e ~55% della varianza totale. Il range di questo singolo TSK ($5.41-$28.86) e' quasi pari all'intero range degli altri 7 TSK combinati. Gestire TSK-136 come task ad alto rischio individuale.",
+      "Monte Carlo non disponibile: N=3 sessioni, nessun dato per-TSK granulare. Non applicabile per throughput forecast.",
+      "Raccomandazione: dopo Sprint 20, registrare gli eventi per-TSK in analytics/events/. Questo ridurra' la banda di incertezza del 60-70% per Sprint 21 (N passera' da 3 sessioni a 8+ task individuali, con breakout per size)."
+    ]
+  }
+}

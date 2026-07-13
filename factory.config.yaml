@@ -1,0 +1,288 @@
+# factory.config.yaml — configurazione factory soli-turnly (v2.32)
+# PATTERN §13 (topology) §14 (stack) §15 (VCS) §16 (sync) §17 (publisher)
+# §18 (scheduler) §19 (CQRL) §20 (compression) §24 (design intelligence)
+# §25 (semantic drift) §27 (prototype generation) §28 (tavola rotonda)
+# §29 (factory scalability patterns EP-040) §30 (voice channel EP-041)
+# §31 (hybrid wiki search EP-042)
+
+project_name: "soli-turnly"
+language: it
+owner: "soli92"
+pattern_version: "2.32"
+
+topology: full-stack-agents   # knowledge-only | plan-only | full-stack-agents | hybrid-be-agents | hybrid-fe-agents | custom
+
+code_paths:
+  - name: app
+    path: "code/app"
+    layers: [be, fe, db, qa]
+    tags: [turnazione, scheduling]
+    vcs:
+      mode: monorepo           # monorepo | submodule | sibling | external | none
+      branch_strategy: feature-branches
+      commit_coupling: loose
+
+stack_mode: guided             # manual | guided | auto
+
+adapters:
+  - claude
+
+kanban_publish:
+  provider: none               # none | github | gitlab | jira | linear | custom
+  mode: push-only
+
+# =============================================================
+# Central Model Registry (EP-040, PATTERN §29.2)
+# Unico posto per aggiornare model ID per tutti gli agenti.
+# =============================================================
+models:
+  routing:
+    tier_fast:    claude-haiku-4-5-20251001   # orchestrator, wiki-lint, sync agents
+    tier_default: claude-sonnet-4-6           # maggioranza agenti
+    tier_deep:    claude-opus-4-8             # code-reviewer, lead-architect
+  overrides: {}                               # {agent_name: model_id} per eccezioni
+
+scheduler:
+  enabled: true
+  max_parallel: 4
+  parallel_gate_threshold: 3
+  code_path_conflict: strict
+  empty_code_path_policy: serial
+  domains:
+    ingest: true
+    develop: true
+    lint: true
+    query: true
+    plan: true
+    design: true
+    publish: false
+    sync: true
+    review: true               # CQRL v2.12 — attivo
+    visual-oracle: false       # v2.17
+    a11y: false                # v2.18
+    ux-ui-review: false        # v2.18
+    functional-oracle: false   # v2.20
+    premortem: true            # v2.16
+    prototype: false           # v2.26 EP-035
+
+code_quality:
+  enabled: true                # CQRL opt-in (v2.12) — ATTIVO
+  max_iterations: 3
+  thresholds:
+    confidence_min: 0.6
+    batching_split: 7
+    pass_rate_warn: 0.05
+    false_positive_warn: 0.30
+  passes:
+    idiomaticity: true
+    design: true
+    robustness: true
+    accessibility: false       # v2.18 NEW
+  router:
+    strategy: severity-tiered
+    max_diff_lines: 80
+  ruleset:
+    path: "code_quality/rules"
+  reports:
+    path: "code_quality/reports"
+
+compression:
+  output:
+    enabled: false             # OCL opt-in (v2.14, R.C6 — default off)
+    provider: caveman
+    policy_profile: conservative   # conservative | aggressive | custom
+    drift_fallback: ambiguous_handoff_marker
+    chain_depth_downgrade: true
+    cross_factory: off
+  context:
+    enabled: false             # CCL opt-in (v2.14, R.G6 — default off)
+    provider: none             # none | graphify-cloud | graphify-ollama
+    update_strategy: incremental
+    full_rebuild_cron: "0 0 * * 0"   # weekly
+    ci_strategy: cache-with-fallback
+    confidence_gating:
+      executor: EXTRACTED
+      explorer: EXTRACTED,INFERRED
+      reviewer: all
+    full_rebuild_cost_warn: 5.0
+    mcp_server: per-agent
+    targets: []
+
+fe_correctness:
+  enabled: false               # Visual Oracle master switch (v2.17)
+  max_iterations: 3
+  viewports:
+    - {name: mobile, width: 375}
+    - {name: desktop, width: 1280}
+  themes: [light, dark]
+  checks: []                   # opt-in: [visual-regression, axe-a11y, interaction-test]
+  state_matrix_inject: false
+  granularity_lint: false
+  granularity: {max_estimate_hours: 8, max_states: 3}
+  dispatch_gate: false
+  functional_oracle:           # v2.20 EP-018
+    enabled: false
+    max_iterations: 3
+    critic: advisory
+    acceptance_spec_glob: "code_quality/acceptance/*.acceptance.yaml"
+
+a11y:                          # v2.18 EP-007
+  enabled: false
+  agent: false
+  standard: "wcag22aa"
+  severity_threshold: critical
+  required_on_fe_done: false
+  fail_ci_on: critical
+  include_interactive: false
+  fallback_non_web: snippet-inline
+
+ux_ui:                         # v2.18 EP-008
+  enabled: false
+  max_iterations: 3
+  rubric_strict: true
+  design_system_path: ""
+  default_viewports:
+    - {name: mobile,  width: 375}
+    - {name: desktop, width: 1280}
+  agents:
+    reviewer: false
+    designer: false
+  required_on_fe_done: false
+  delegate_a11y_to_ep007: true
+
+design_intelligence:           # v2.21 EP-019 — estende EP-008
+  enabled: false               # richiede ux_ui.enabled: true (fail-loud al boot, ADR-071)
+  art_director: false
+  generator_tool: none         # none | plop | yeoman
+  critic_enabled: false
+  rubric_intention_economy: false
+
+wiki_lint:                     # v2.23 EP-031 — Semantic Drift Detection
+  semantic_check:
+    enabled: false             # L3 embedding coseno opt-in (default off)
+    similarity_threshold: 0.75
+    embedding_model: voyage-3  # voyage-3 | text-embedding-3-small
+    cost_warn_usd: 1.0
+    output_report: true
+    output_report_path: "code_quality/reports/"
+
+analytics:
+  measurement:
+    enabled: true              # EP-009 Task Analytics measurement — attivo (supporta Token Ledger)
+    agent: false
+  estimation:
+    enabled: false             # EP-010 Task Analytics estimation
+    agent: false
+  dogfooding:                  # v2.19 EP-013 — ATTIVO
+    enabled: true
+    privacy_policy_path: "analytics/PRIVACY.md"
+    lock_strategy: flock-advisory
+    idempotency_strategy: hash-compound
+  token_ledger:                # v2.21 EP-022 — ATTIVO
+    enabled: true
+    display_mode: compact      # compact | full
+    show_cache_savings: true
+    auto_call_on_wave_close: false
+    pricing_fallback: prefix-based
+  sprint_progress:             # v2.30 EP-043
+    enabled: false
+    velocity_rolling_days: 7
+
+release_governance:            # §22 — governance META, default false in factory derivate
+  battle_test_gate:
+    enabled: false
+
+# Prototype Generation Layer (v2.26, EP-035, PATTERN §27) — off
+prototyping:
+  enabled: false               # master switch EP-035 (R.P3 default off)
+  backend: auto
+  fallback_chain: [figma, penpot, react, html]
+  degrade_policy: notify
+  fidelity: interactive
+  design_source: auto
+  art_director: inherit
+  output_path: "output/prototypes"
+  oracle_handoff: true
+  scheduler_domain: prototype
+  backends:
+    html:
+      css_strategy: tailwind-cdn
+      single_file: true
+    react:
+      component_lib: shadcn
+      storybook: true
+      target: null
+    figma:
+      mcp_server: "figma"
+      file_key: ""
+    penpot:
+      mcp_server: "penpot"
+      instance_url: ""
+
+# Tavola Rotonda — modalita' multi-agente collaborativa (EP-039, PATTERN §28) — off
+tavola_rotonda:
+  enabled: false
+  partecipanti: []
+  critico:
+    enabled: true
+    mode: dedicated
+  max_round: 4
+  stop_su_consenso: true
+  definizione_consenso: unanimity
+  meccanismo_decisione: ibrido
+  budget:
+    max_cost_usd: ~
+    max_tokens: ~
+    max_latency_s: ~
+  topologia: lavagna
+  sintesi_progressiva: true
+
+# Voice Channel Layer (EP-041, PATTERN §30) — off
+voice_channel:
+  enabled: false
+
+# Hybrid Wiki Search Layer (EP-042, PATTERN §31) — off
+wiki_search:
+  enabled: false
+  embedding_provider: local
+  embedding_model: paraphrase-multilingual-MiniLM-L12-v2
+  embedding_dim: 384
+  index_path: .wiki-search/index.lance
+  index_table: pages
+  chunk_strategy: h2-section
+  mode: hybrid
+  rrf_k: 60
+  candidate_k: 20
+  top_k: 5
+  exclude_types: [meta]
+
+# Temporal Generative Time Model (EP-043) — off
+temporal:
+  estimate_protocol:
+    enabled: false
+    budget_ms:
+      S: 900000
+      M: 3600000
+      L: 14400000
+      XL: 57600000
+    thresholds:
+      warn_time_ratio: 1.5
+      escalate_time_ratio: 5.0
+      escalate_confidence_min: 0.1
+
+# Capability Formativa (EP-045) — off
+capability_formativa:
+  enabled: false
+  wiki_search_integration: false
+
+# VCS Branch Awareness Layer (v2.25, EP-034) — off
+vcs:
+  mode: monorepo
+  base_branch: main
+  branch_strategy: feature-branches
+  branch_awareness:
+    enabled: false
+    preflight: false
+    dispatch_gate: off
+    auto_align: off
+    drift_check: false

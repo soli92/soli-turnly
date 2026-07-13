@@ -1,0 +1,146 @@
+{
+  "estimate_id": "EST-2026-06-04-001",
+  "scope": {
+    "epic": "EP-011",
+    "title": "Temporal Awareness Layer",
+    "stories": [
+      { "id": "US-045", "name": "Temporal Context Injection", "O": 0.5, "M": 1.0, "P": 2.0 },
+      { "id": "US-046", "name": "Temporal Handoff Protocol",  "O": 1.5, "M": 3.0, "P": 5.0 },
+      { "id": "US-047", "name": "Temporal State Machine TSK-XL", "O": 3.0, "M": 6.0, "P": 12.0 },
+      { "id": "US-048", "name": "Config Pattern Integration Scheduler", "O": 1.5, "M": 3.0, "P": 5.0 }
+    ]
+  },
+  "estimate": {
+    "method": "PERT",
+    "intervals": {
+      "cost": {
+        "p50": 9893,
+        "p85": 11189,
+        "p95": 11945,
+        "currency": "EUR",
+        "rate_basis": "fully-loaded",
+        "rate_role": "senior-engineer",
+        "rate_hourly_eur": 90.0,
+        "hours_per_day": 8,
+        "rate_valid_from": "2026-04-01",
+        "source": "analytics/rates.yaml",
+        "note": "Costo derivato dalla skill/agente: duration_days * 8h * 90 EUR/h (senior-engineer fully-loaded, valid_from 2026-04-01). EP-011 è sviluppo framework puro, actor_type: human. Split agentico trascurabile (framework meta-level, no tool LLM inference in produzione). ADR-024 §B."
+      },
+      "duration": {
+        "p50_days": 13.74,
+        "p85_days": 15.54,
+        "p95_days": 16.59,
+        "unit": "days",
+        "per_method": {
+          "pert": {
+            "p50": 13.74,
+            "p85": 15.54,
+            "p95": 16.59
+          },
+          "rcf": {
+            "p50": null,
+            "p85": null,
+            "p95": null
+          }
+        },
+        "mc_duration_weeks": null
+      }
+    },
+    "split_human_agentic": {
+      "human_pct": 100.0,
+      "agentic_pct": 0.0,
+      "human_cost_p50": 9893,
+      "agentic_cost_p50": 0,
+      "note": "Split 100% umano: EP-011 è sviluppo di capability framework (modifica skill/config/PATTERN). Nessun costo LLM inference in produzione a livello EP (i costi agentici sono dello sviluppatore che usa la factory, non del prodotto consegnato). Arricchire se reference class storica EP diventa disponibile."
+    },
+    "assumptions": [
+      "Combinazione P50/P85/P95 = massimo conservativo tra i metodi applicabili (PERT); mai una media (regola anti-bias di ottimismo, ADR-025 §C).",
+      "Mode primario: pert (sorgente: aggregato worst-case).",
+      "Reference class aggregata: N=0 campioni, similarity=low, confidence=very_low.",
+      "Durata in person-days (PERT/RCF sommano voci indipendenti; ore-persona != tempo calendario — vedi run-pert §Limiti). La conversione effort→calendario dipende dalla capacità team (non modellata qui).",
+      "Costo derivato dalla skill/agente: senior-engineer fully-loaded 90 EUR/h (rates.yaml valid_from 2026-04-01), 8h/giorno. Nessun costo agentico (sviluppo framework, non produzione LLM).",
+      "Confidence very_low → method forzato a PERT (ADR-025 §C/§D enforce).",
+      "US-047 (Temporal State Machine) è la voce dominante: attesa PERT = 6.5 pd su 13.74 totali (47%), std = 1.5 pd su std_totale = 1.73 pd (87% della varianza totale). Scomposizione in 2 TSK raccomandata dal PM (EP-011 §Notes operative) se P/O > 3.",
+      "Nessuna dipendenza hard da EP precedenti: EP-011 è opt-in standalone. Sinergie soft con EP-009 (event store) e EP-010 (stima) non aumentano l'effort diretto.",
+      "Assunzioni architetturali pendenti (7 ADR in EP-011): la mancata risoluzione prima del Develop potrebbe aumentare P di US-047 e US-048 verso i valori pessimistici. Contingency 35% compensa parzialmente.",
+      "Similarity low (N=0, nessuno storico reference class per EP di tipo temporal/framework): downgrade a very_low corretto per il calcolo della confidence."
+    ],
+    "contingency_pct": 35,
+    "contingency_note": "Buffer di rischio dichiarato separatamente, NON incluso nel P50 (ADR-024 §G). Enforce very_low: >=30% obbligatorio (ADR-025 §D). Alzato a 35% per riflettere i 7 ADR aperti (decisioni di Arch pendenti su storage, policy, coupling EP-009) che possono espandere lo scope di US-047/US-048.",
+    "contingency_budget_eur": {
+      "on_p50": 3462,
+      "on_p85": 3916,
+      "p85_plus_contingency": 15105,
+      "note": "P85 + contingency 35% = 15105 EUR = budget prudente per pianificazione sprint. Non è un commitment."
+    },
+    "sensitivity_drivers": [
+      {
+        "variable": "scope_completeness",
+        "impact_on_p85_pct": 50.0,
+        "direction": "inverse",
+        "detail": "I 7 ADR aperti su US-047/US-048 (storage state file, policy attivazione, coupling EP-009) possono espandere lo scope. Se tutti gli ADR scelgono la soluzione più complessa (event-derived view + retroactive wrapping) il P di US-047 tende a 12 pd invece di 6."
+      },
+      {
+        "variable": "team_familiarity",
+        "impact_on_p85_pct": 40.0,
+        "direction": "inverse",
+        "detail": "La capability è nuova nel framework. Un team non familiare con il parallel-scheduler e la skill dev-handoff/vcs-handoff richiede tempo di ramp-up non stimato (tipicamente +20-30% su O/M per US-046/US-048)."
+      },
+      {
+        "variable": "reference_class_N",
+        "impact_on_p85_pct": 30.0,
+        "direction": "inverse",
+        "detail": "N=0 oggi. Con N=5 capability simili storiche la confidence salirebbe a low→medium e il P85 verrebbe calibrato da dati reali invece di elicitation PM. Ogni EP completato arricchisce la reference class."
+      },
+      {
+        "variable": "scope_count",
+        "impact_on_p85_pct": 25.0,
+        "direction": "direct",
+        "detail": "4 US in scope. Se i 7 ADR introducono decisioni che portano a US aggiuntive (es. US-049 per Pattern 2 Timestamped Tool Wrapper — attualmente fuori scope) il P85 scala linearmente."
+      },
+      {
+        "variable": "us047_adr_coupling",
+        "impact_on_p85_pct": 45.0,
+        "direction": "direct",
+        "detail": "US-047 domina la varianza (87% della std totale). L'ADR su coupling EP-009 events è il driver principale: opzione (c) event-derived view sposta P di US-047 verso 12 pd (coupling forte) vs 5-6 pd (standalone semplice). Decisione hard prioritaria per il TPM."
+      }
+    ],
+    "reference_class_quality": {
+      "N": 0,
+      "period": null,
+      "similarity": "low",
+      "confidence": "very_low",
+      "mode": "PERT-only"
+    },
+    "notes": [
+      "STIMA, NON COMMITMENT. Una stima è una distribuzione di probabilità, non un impegno contrattuale (concept §Limiti). P50 = 50% di probabilità di completare entro quella durata; P85 = 85%.",
+      "Bias di ottimismo non mitigato (Kahneman/Flyvbjerg): con N=0 non è possibile applicare la 'outside view' della Reference Class Forecasting. La stima si basa sull'inside view del PM (elicitation). Le elicitation tendono sistematicamente a sottostimare. Il contingency 35% è parzialmente correttivo ma non elimina il bias.",
+      "Ricalibrazione raccomandata: dopo i 7 ADR di Fase 1 (Arch), rieseguire /estimate --from-kanban=EP-011 con O/M/P aggiornati dal TPM prima della pianificazione sprint. Il nuovo estimate_id collegherà questo come previous_estimate_id (ADR-027 §F audit chain).",
+      "Monte Carlo non applicabile: nessun throughput storico disponibile (N=0). La stima è PERT pura su elicitation. Il Monte Carlo diventerebbe applicabile dopo 8+ settimane di dati EP-009."
+    ]
+  },
+  "metadata": {
+    "generated_at": "2026-06-04T00:00:00Z",
+    "generator": "estimation-analyst (EP-010 US-043) + estimate-project.sh (TSK-075)",
+    "seed": null,
+    "previous_estimate_id": null,
+    "command": "/estimate --from-kanban=EP-011",
+    "config_path": "factory.config.yaml",
+    "pert_voices": [
+      { "name": "US-045", "O": 0.5, "M": 1.0, "P": 2.0, "expected": 1.08, "std": 0.25 },
+      { "name": "US-046", "O": 1.5, "M": 3.0, "P": 5.0, "expected": 3.08, "std": 0.58 },
+      { "name": "US-047", "O": 3.0, "M": 6.0, "P": 12.0, "expected": 6.50, "std": 1.50 },
+      { "name": "US-048", "O": 1.5, "M": 3.0, "P": 5.0, "expected": 3.08, "std": 0.58 }
+    ],
+    "pert_total": {
+      "expected": 13.74,
+      "variance": 2.9931,
+      "std": 1.73
+    }
+  },
+  "warnings": [
+    "Confidence very_low: stima fragile. method=PERT forzato, contingency >=30 enforced. Bias di ottimismo non mitigato (Kahneman/Flyvbjerg). Vedi ADR-025 §C/§D.",
+    "Nessun dato storico disponibile (EP-009 measurement assente o reference class vuota): stima PERT-only basata su elicitation. Calibrare contingency al rialzo.",
+    "7 ADR di Arch aperti prima del Develop: le decisioni su storage state file + coupling EP-009 + policy attivazione State Machine impattano direttamente il range P50-P95 di US-047 (voce dominante). Risolverli prima della pianificazione sprint riduce l'incertezza."
+  ]
+}
