@@ -1,0 +1,451 @@
+# Turnly — Acceptance Specification
+# Basata su §11 del documento funzionale (T-DOM, T-REC, T-SWP, T-REQ, T-INT, T-SEC)
+# Versione: 0.1 | Data: 2026-07-13
+# Tool: Playwright (functional-oracle EP-018)
+
+---
+
+# ═══════════════════════════════════════════════
+# T-INT — Integrazione componenti
+# ═══════════════════════════════════════════════
+
+- id: T-INT-01
+  title: "Parità validazione UI ↔ API (Zod schema condiviso)"
+  category: integration
+  priority: critical
+  requires: [TSK-006, TSK-007]
+  precondition: |
+    Admin autenticato. Matrice turni aperta per la settimana 14–20 lug 2026.
+    Mario Rossi ha un turno Mattina 06:00–14:00 lunedì 14.
+  steps:
+    - Clicca cella lunedì 14 riga Mario Rossi
+    - Nell'editor turno seleziona Pomeriggio 14:00–22:00 (sovrapposto: 06:00–14:00 ∩ 14:00–22:00 = nessuna sovrapposizione — ok)
+    - Poi seleziona un turno che inizia alle 10:00 (sovrapposizione con 06:00–14:00)
+  acceptance:
+    - La UI mostra errore RB-01 ("sovrapposizione") PRIMA del salvataggio
+    - Il POST /api/shifts risponde 400 con `{ rule: "RB-01", message: "Sovrapposizione turni" }`
+    - Il messaggio di errore FE e BE hanno la stessa struttura (`rule`, `message`, `field`)
+    - Nessun turno viene salvato nel DB
+
+- id: T-INT-02
+  title: "Concurrent write — un solo turno sovrapposto passa (PostgreSQL EXCLUDE gist)"
+  category: integration
+  priority: critical
+  requires: [TSK-002, TSK-004]
+  precondition: |
+    DB pulito. Mario Rossi senza turni lunedì 14 lug.
+  steps:
+    - Due sessioni Admin (A e B) aprono contemporaneamente l'editor per lunedì 14 Mario Rossi
+    - Entrambe selezionano Mattina 06:00–14:00 e cliccano Salva quasi simultaneamente
+  acceptance:
+    - Uno dei due POST /api/shifts risponde 200 (turno creato)
+    - L'altro risponde 409 Conflict (EXCLUDE gist constraint)
+    - DB ha esattamente 1 turno per Mario Rossi lunedì 14
+    - audit_log ha 2 entry: 1 successo + 1 rifiuto con motivo "db_constraint_overlap"
+
+- id: T-INT-03
+  title: "Invio richiesta → badge inbox e notifica aggiornati in tempo utile"
+  category: integration
+  priority: major
+  requires: [TSK-008, TSK-004]
+  precondition: |
+    Admin e dipendente Anna Verdi entrambi loggati in sessioni separate.
+    Badge inbox admin = 0. Anna non ha richieste pendenti.
+  steps:
+    - Anna invia richiesta ferie 20–27 lug
+    - Osserva la UI dell'admin (senza ricaricare la pagina)
+  acceptance:
+    - Il badge inbox dell'admin si incrementa a 1 entro 3 secondi (SSE)
+    - L'admin vede la richiesta nella coda senza refresh
+    - Anna vede la propria richiesta in stato "inviata" nella lista richieste
+
+# ═══════════════════════════════════════════════
+# T-DOM — Correttezza dominio
+# ═══════════════════════════════════════════════
+
+- id: T-DOM-01
+  title: "Turno notturno: durata 8h, attraversaMezzanotte = true"
+  category: domain
+  priority: critical
+  requires: [TSK-002, TSK-006]
+  precondition: Admin crea una nuova tipologia turno.
+  steps:
+    - Nome: "Notte", oraInizio: "22:00", oraFine: "06:00"
+    - Salva
+  acceptance:
+    - durataMinuti = 480 (8h)
+    - attraversaMezzanotte = true
+    - La data di competenza del turno è quella del giorno di inizio (22:00)
+
+- id: T-DOM-02
+  title: "RB-01: sovrapposizione turni bloccata"
+  category: domain
+  priority: critical
+  requires: [TSK-006]
+  precondition: |
+    Mario Rossi ha Mattina 08:00–16:00 mercoledì 15.
+  steps:
+    - Admin tenta di assegnare a Mario Rossi Pomeriggio 14:00–22:00 mercoledì 15
+  acceptance:
+    - La UI mostra errore bloccante (rosso) sulla cella
+    - Il salvataggio è impedito (bottone Salva disabilitato o rimosso)
+    - Il server risponde 400 `{ rule: "RB-01" }` se la richiesta arriva ugualmente
+
+- id: T-DOM-03
+  title: "RB-02: avviso riposo < 11h"
+  category: domain
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Mario Rossi finisce alle 22:00 martedì 14 (Pomeriggio).
+  steps:
+    - Admin assegna Mattina 06:00–14:00 mercoledì 15 (riposo: 8h < 11h)
+  acceptance:
+    - La UI mostra avviso giallo (⚠) sulla cella con "Riposo < 11h (RB-02)"
+    - Il salvataggio è consentito previa conferma esplicita dell'admin
+    - Il server accetta con `warnings: ["RB-02"]` nel response body
+
+- id: T-DOM-04
+  title: "RB-08: turno in assenza bloccato"
+  category: domain
+  priority: critical
+  requires: [TSK-006]
+  precondition: |
+    Luca Bianchi in ferie 10–14 lug (assenza attiva registrata).
+  steps:
+    - Admin tenta di assegnare un turno a Luca Bianchi venerdì 12 lug
+  acceptance:
+    - La cella è marcata come "ASSENZA" nella matrice
+    - Il tentativo di assegnazione risponde errore bloccante "RB-08"
+    - Nessun turno creato nel DB
+
+- id: T-DOM-05
+  title: "RB-04: avviso 7 giorni consecutivi"
+  category: domain
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Sara Neri ha 6 turni consecutivi lun–sab.
+  steps:
+    - Admin assegna un turno a Sara domenica (7° giorno consecutivo)
+  acceptance:
+    - Avviso (⚠) "7 giorni consecutivi (RB-04)" visibile nella matrice
+    - Salvataggio consentito con conferma
+
+- id: T-DOM-06
+  title: "RB-06: calcolo straordinari corretto"
+  category: domain
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Paolo Blu, contratto 40h/settimana.
+  steps:
+    - Assegna turni per 46h totali nella settimana 14–20 lug
+    - Apri Report Ore
+  acceptance:
+    - oreOrdinarie = 40h, oreStraordinarie = 6h, totale = 46h
+    - Badge ⚠ nella riga di Paolo nel report (soglia 40h mensili non ancora superata)
+
+- id: T-DOM-07
+  title: "RB-07: sotto-copertura segnalata"
+  category: domain
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Fabbisogno notte mercoledì: 3 Infermieri.
+    Turno notte mercoledì: 2 Infermieri assegnati.
+  steps:
+    - Apri vista Fabbisogni/Coperture, tab Monitor
+  acceptance:
+    - Cella notte mercoledì marcata rosso con "-1"
+    - Tooltip/dettaglio: "Richiesti 3 Infermieri, pianificati 2"
+
+- id: T-DOM-08
+  title: "RB-12: durata corretta attraverso cambio ora legale (DST)"
+  category: domain
+  priority: critical
+  requires: [TSK-006]
+  precondition: |
+    timezone = Europe/Rome.
+    Data: ultima domenica di marzo (DST forward: 02:00 → 03:00).
+  steps:
+    - Crea turno Notte 22:00 sabato → 06:00 domenica (DST forward night)
+  acceptance:
+    - durataMinuti = 420 (7h, non 8h) — 1h persa per DST
+    - Il campo `attraversaMezzanotte = true`
+    - Nessun errore di calcolo; le ore straordinarie usano la durata reale
+
+# ═══════════════════════════════════════════════
+# T-REC — Ricorrenze e cicli
+# ═══════════════════════════════════════════════
+
+- id: T-REC-01
+  title: "Ricorrenza su giorno di assenza: occorrenza saltata"
+  category: recurrence
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Luca Bianchi in ferie 14–18 lug.
+    Ricorrenza settimanale Mattina ogni lunedì assegnata a Luca.
+  steps:
+    - Genera ricorrenza per il periodo 14–31 lug
+  acceptance:
+    - Lunedì 14 lug: NESSUN turno creato (assenza attiva)
+    - Report post-generazione: "1 occorrenza saltata: Luca Bianchi lun 14/07 (ferie)"
+    - Lunedì 21 lug e 28 lug: turni creati regolarmente
+
+- id: T-REC-02
+  title: "Modifica singola occorrenza non altera la serie"
+  category: recurrence
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Ricorrenza settimanale Mattina per Mario Rossi lun–ven, 14 lug – 31 ago.
+  steps:
+    - Admin clicca il turno lunedì 14 lug → modifica orario a 07:00–15:00
+    - Seleziona "Solo questa occorrenza"
+  acceptance:
+    - Lunedì 14: 07:00–15:00
+    - Lunedì 21, 28, ecc.: rimangono 06:00–14:00 (serie invariata)
+
+# ═══════════════════════════════════════════════
+# T-SWP — Scambio turni
+# ═══════════════════════════════════════════════
+
+- id: T-SWP-01
+  title: "Swap bloccato se genera violazione bloccante (RB-10)"
+  category: swap
+  priority: critical
+  requires: [TSK-006]
+  precondition: |
+    Mario Rossi: Notte 22:00–06:00 martedì 15.
+    Turno precedente di Mario: Pomeriggio 22:00 lunedì 14 (fine 22:00 lun).
+    Luca Bianchi: Mattina 06:00–14:00 mercoledì 16.
+    Swap proposto: Mario (notte mar) ↔ Luca (mattina mer).
+    Dopo swap Mario avrebbe: fine lun 22:00 → inizio mer 06:00 = 8h riposo < 11h → RB-02 BLOCCANTE.
+  steps:
+    - Admin apre Scambio Turni, seleziona turno Mario e turno Luca
+    - Clicca "Anteprima impatto"
+  acceptance:
+    - Pannello impatto mostra: Mario — BLOCCANTE RB-02 (riposo 8h < 11h)
+    - Bottone "Conferma scambio" disabilitato
+    - Se chiamata API diretta: risponde 422 `{ rule: "RB-10", blockedFor: "mario_rossi", reason: "RB-02" }`
+
+- id: T-SWP-02
+  title: "Swap con solo avvisi: consentito con conferma, tracciato in audit"
+  category: swap
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Anna Verdi: Mattina 06:00–14:00 giovedì 17.
+    Paolo Blu: Pomeriggio 14:00–22:00 giovedì 17.
+    Swap genera avviso RB-02 (riposo 12h ≥ 11h: nessun blocco, ma c'è un altro avviso minore).
+  steps:
+    - Admin apre Scambio, seleziona i due turni
+    - Anteprima mostra solo avvisi (giallo)
+    - Admin clicca "Conferma scambio"
+  acceptance:
+    - Swap eseguito correttamente
+    - audit_log entry: { action: "swap", shiftAId, shiftBId, adminId, outcome: "accepted_with_warnings", warnings: ["RB-02"] }
+    - Entrambi i dipendenti ricevono notifica `turno_modificato`
+
+# ═══════════════════════════════════════════════
+# T-REQ — Richieste e workflow approvazione
+# ═══════════════════════════════════════════════
+
+- id: T-REQ-01
+  title: "Ciclo completo richiesta assenza: ferie attive bloccano nuovi turni"
+  category: requests
+  priority: critical
+  requires: [TSK-004, TSK-006]
+  precondition: |
+    Anna Verdi senza assenze. Admin autenticato.
+  steps:
+    - Anna invia richiesta ferie 20–27 lug
+    - Admin riceve notifica, apre coda approvazioni, approva
+    - Admin tenta di assegnare un turno ad Anna venerdì 24 lug
+  acceptance:
+    - Dopo approvazione: assenza attiva creata nel DB
+    - Cella venerdì 24 nella matrice marcata "FERIE" per Anna
+    - Tentativo assegnazione turno → errore RB-08 bloccante
+    - Anna riceve notifica "richiesta_approvata"
+
+- id: T-REQ-02
+  title: "Approvazione bloccata se genera violazione bloccante (RB-14)"
+  category: requests
+  priority: critical
+  requires: [TSK-004, TSK-006]
+  precondition: |
+    Mario Rossi ha già un turno Mattina 06:00–14:00 mercoledì 15.
+    Mario invia richiesta "Nuovo turno" per mercoledì 15 09:00–17:00 (sovrapposto).
+  steps:
+    - Admin apre coda approvazioni, seleziona la richiesta di Mario
+    - Clicca "Approva"
+  acceptance:
+    - Il sistema riapplica RB-01: sovrapposizione rilevata
+    - Approvazione bloccata con messaggio "Violazione bloccante: RB-01 – sovrapposizione con turno esistente 06:00–14:00"
+    - Lo stato della richiesta rimane "in_attesa", non "approvata"
+    - Nessun turno creato nel DB
+
+- id: T-REQ-03
+  title: "Scambio tra colleghi: collega deve accettare prima dell'approvazione admin"
+  category: requests
+  priority: critical
+  requires: [TSK-004]
+  precondition: |
+    Luca Bianchi (richiedente) ha Mattina mar 15. Mario Rossi (collega) ha Notte mar 15.
+  steps:
+    - Luca invia richiesta scambio con Mario
+    - Richiesta passa allo stato "in_attesa_collega"
+    - Mario riceve notifica, RIFIUTA la proposta
+  acceptance:
+    - Dopo rifiuto di Mario: richiesta → stato "rifiutata"
+    - La richiesta NON compare nella coda approvazioni dell'admin
+    - Luca riceve notifica "collega ha rifiutato lo scambio"
+
+- id: T-REQ-04
+  title: "Richiesta applicata/rifiutata è immutabile (RB-16)"
+  category: requests
+  priority: major
+  requires: [TSK-004]
+  precondition: |
+    Richiesta ferie di Anna nello stato "applicata".
+  steps:
+    - Anna tenta di annullare la richiesta via UI
+    - (Test API) PATCH /api/requests/{id} con { status: "annullata" }
+  acceptance:
+    - UI: bottone "Annulla" non presente / disabilitato per richieste "applicate"
+    - API: risponde 422 `{ error: "RB-16: richiesta immutabile in stato 'applicata'" }`
+    - Stato della richiesta invariato nel DB
+
+- id: T-REQ-05
+  title: "Indisponibilità dichiarata genera avviso in pianificazione (RB-15)"
+  category: requests
+  priority: major
+  requires: [TSK-006]
+  precondition: |
+    Sara Neri ha dichiarato indisponibilità sabato mattina (ricorrente).
+  steps:
+    - Admin assegna a Sara un turno Mattina 06:00–14:00 sabato 19 lug
+  acceptance:
+    - La cella mostra avviso ⚠ "Indisponibilità dichiarata (RB-15)"
+    - L'avviso è visibile anche nei filtri/tooltip della matrice
+    - Il salvataggio è consentito (RB-15 è AVVISO, non BLOCCANTE di default)
+
+# ═══════════════════════════════════════════════
+# T-SEC — Sicurezza e autorizzazione
+# ═══════════════════════════════════════════════
+
+- id: T-SEC-01
+  title: "Dipendente non può vedere turni di altri (IDOR)"
+  category: security
+  priority: critical
+  requires: [TSK-003, TSK-004]
+  precondition: |
+    Anna Verdi (role: employee) autenticata.
+    Mario Rossi ha turni nella stessa settimana.
+  steps:
+    - Anna apre calendario → vede solo i propri turni
+    - (API test) GET /api/shifts?userId=mario_rossi_id con session di Anna
+  acceptance:
+    - Calendario mostra SOLO i turni di Anna
+    - API GET con userId altrui: risponde 403 Forbidden o filtra automaticamente per session.user.id
+    - Nessun dato di Mario Rossi esposto
+
+- id: T-SEC-02
+  title: "Dipendente non può eseguire scritture admin (403)"
+  category: security
+  priority: critical
+  requires: [TSK-003, TSK-004]
+  precondition: |
+    Anna Verdi (role: employee) autenticata.
+  steps:
+    - (API test) POST /api/shifts con payload valido (turno per chiunque) usando session di Anna
+    - (API test) POST /api/admin/users con payload nuovo dipendente
+    - (API test) PATCH /api/requests/{id}/approve con requestId di un'altra richiesta
+  acceptance:
+    - Tutti e 3 i tentativi ricevono 403 Forbidden
+    - Nessuna modifica nel DB
+    - audit_log registra i tentativi non autorizzati
+
+- id: T-SEC-03
+  title: "Sessione scaduta → API risponde 401"
+  category: security
+  priority: critical
+  requires: [TSK-003]
+  precondition: |
+    Admin autenticato. session_max_age: 3600s (configurato in factory.config.yaml).
+  steps:
+    - Simula token JWT scaduto (o attendi scadenza in test env con max_age breve)
+    - Esegui qualsiasi chiamata API autenticata
+  acceptance:
+    - API risponde 401 Unauthorized
+    - Body: `{ error: "session_expired" }`
+    - Client Next.js reindirizza automaticamente a /login
+
+- id: T-SEC-04
+  title: "Dipendente non può modificare campi contrattuali (RB-13)"
+  category: security
+  priority: critical
+  requires: [TSK-003, TSK-004]
+  precondition: |
+    Anna Verdi (role: employee) autenticata.
+    Anna ha qualificaId = "ota".
+  steps:
+    - (UI) Anna apre il proprio profilo → campi contrattuali in sola lettura
+    - (API test) PATCH /api/users/me con { qualificationId: "infermiere" }
+  acceptance:
+    - UI: campi contratto (qualifica, ore, tipo contratto, ruolo, stato) non editabili
+    - API: risponde 403 `{ error: "RB-13: campo non modificabile dal dipendente", field: "qualificationId" }`
+    - qualificaId di Anna rimane "ota" nel DB
+
+- id: T-SEC-05
+  title: "Solo il collega destinatario può accettare una proposta di scambio (T-SEC-08)"
+  category: security
+  priority: critical
+  requires: [TSK-004]
+  precondition: |
+    Luca ha inviato richiesta di scambio indirizzata a Mario.
+    Richiesta in stato "in_attesa_collega". Sara Neri è un altro dipendente.
+  steps:
+    - (API test) PATCH /api/requests/{id}/accept-swap con session di Sara (non destinataria)
+  acceptance:
+    - API risponde 403 Forbidden
+    - Lo stato della richiesta non cambia
+    - Solo Mario può eseguire l'accettazione
+
+# ═══════════════════════════════════════════════
+# T-RNF — Requisiti non funzionali
+# ═══════════════════════════════════════════════
+
+- id: T-RNF-01
+  title: "Matrice 50 dipendenti × 31 giorni: load e interattività fluidi"
+  category: performance
+  priority: major
+  requires: [TSK-005]
+  precondition: |
+    DB con 50 utenti attivi, 31 giorni di turni (1550 celle, ~80% popolate).
+  steps:
+    - Admin naviga a /admin/matrix?view=month&date=2026-07-01
+    - Misura First Contentful Paint (FCP) e Time to Interactive (TTI)
+    - Scorrere la griglia orizzontalmente e verticalmente
+    - Cliccare una cella e aprire l'editor turno
+  acceptance:
+    - FCP < 2s (Next.js streaming + RSC)
+    - Cella click → editor aperto < 200ms (optimistic update)
+    - Scroll fluido 60fps (TanStack Table virtualizzazione)
+    - Nessun layout shift (CLS < 0.1)
+
+- id: T-RNF-02
+  title: "Internazionalizzazione: formato data e primo giorno settimana"
+  category: i18n
+  priority: minor
+  requires: [TSK-001]
+  precondition: |
+    factory.config.yaml: firstDayOfWeek: "lunedì", dateFormat: "DD/MM/YYYY".
+  steps:
+    - Apri qualsiasi vista con date (matrice, calendario, form assenze)
+  acceptance:
+    - Primo giorno settimana: Lunedì (non domenica)
+    - Date in formato italiano: "14/07/2026" (non "2026-07-14" o "Jul 14")
+    - Tooltip e label in italiano

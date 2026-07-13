@@ -1,0 +1,2893 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turnly — Prototipo Interattivo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    @keyframes shimmer {
+      0%   { background-position: -600px 0; }
+      100% { background-position: 600px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%);
+      background-size: 600px 100%;
+      animation: shimmer 1.4s ease infinite;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; color: #475569; transition: all 0.12s;
+      margin: 1px 0; user-select: none;
+    }
+    .nav-item:hover { background: #f1f5f9; color: #0f172a; }
+    .nav-item.active { background: #eff6ff; color: #3b82f6; font-weight: 500; }
+    .nav-item .nav-icon { width: 15px; height: 15px; flex-shrink: 0; }
+    .nav-item:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+    button:focus-visible, .tab-btn:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+
+    /* turno colors */
+    .turn-mattina    { background-color: #BFDBFE; border-left: 3px solid #3B82F6; }
+    .turn-pomeriggio { background-color: #BBF7D0; border-left: 3px solid #22C55E; }
+    .turn-notte      { background-color: #DDD6FE; border-left: 3px solid #8B5CF6; }
+    .turn-riposo     { background-color: #F1F5F9; border-left: 3px solid #94A3B8; color: #475569; }
+    .turn-assenza    { background-color: #FEF3C7; border-left: 3px solid #F59E0B; }
+    .turn-warn-ring  { outline: 2px solid #F59E0B; outline-offset: -2px; }
+    .turn-error-ring { outline: 2px solid #EF4444; outline-offset: -2px; }
+
+    /* matrix table */
+    .matrix-wrap { overflow: auto; max-height: calc(100vh - 200px); }
+    .matrix-table { border-collapse: separate; border-spacing: 0; white-space: nowrap; }
+    .matrix-table th,
+    .matrix-table td { border: 1px solid #e2e8f0; padding: 0; min-width: 120px; }
+    .matrix-table th:first-child,
+    .matrix-table td:first-child {
+      position: sticky; left: 0; background: white; z-index: 10;
+      min-width: 140px; border-right: 2px solid #e2e8f0;
+    }
+    .matrix-table thead th { position: sticky; top: 0; background: #f8fafc; z-index: 11; font-weight: 600; font-size: 12px; text-align: center; padding: 8px 4px; }
+    .matrix-table thead th:first-child { z-index: 12; text-align: left; padding-left: 12px; }
+
+    /* tabs */
+    .tab-btn { padding: 8px 16px; font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; color: #64748b; cursor: pointer; transition: all 0.12s; }
+    .tab-btn:hover { color: #0f172a; }
+    .tab-btn.active { border-bottom-color: #3b82f6; color: #3b82f6; }
+
+    /* toggle */
+    .toggle-wrap { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 10px; transition: .25s; }
+    .toggle-slider:before { position: absolute; content: ""; width: 14px; height: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .25s; }
+    .toggle-wrap input:checked + .toggle-slider { background: #3b82f6; }
+    .toggle-wrap input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+    /* wizard steps */
+    .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+    .step-done    { background: #22c55e; color: white; }
+    .step-active  { background: #3b82f6; color: white; }
+    .step-pending { background: #e2e8f0; color: #94a3b8; }
+    .step-line    { flex: 1; height: 2px; background: #e2e8f0; }
+    .step-line.done { background: #22c55e; }
+
+    /* page header */
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; border-bottom: 1px solid #e2e8f0;
+      background: white; flex-shrink: 0;
+    }
+    .page-title { font-size: 16px; font-weight: 600; color: #0f172a; }
+
+    /* app header bar */
+    .app-topbar {
+      display: flex; align-items: center; gap: 8px; padding: 0 16px;
+      height: 48px; background: white; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;
+    }
+
+    /* badge */
+    .badge-red    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .badge-green  { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-amber  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .badge-blue   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .badge-slate  { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
+
+    /* input base */
+    .input-base { border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 10px; font-size: 13px; color: #0f172a; outline: none; background: white; width: 100%; }
+    .input-base:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+
+    /* btn */
+    .btn-primary { background: #2563eb; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: white; color: #374151; border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 15px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-secondary:hover { background: #f8fafc; }
+    .btn-danger { background: white; color: #ef4444; border: 1px solid #fecaca; border-radius: 6px; padding: 7px 15px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .btn-success { background: #16a34a; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; }
+
+    /* card */
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; }
+
+    /* kpi tile */
+    .kpi-tile { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+
+    /* month matrix compact */
+    .mc-cell { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+    .mc-mattina    { background: #BFDBFE; color: #1d4ed8; }
+    .mc-pomeriggio { background: #BBF7D0; color: #15803d; }
+    .mc-notte      { background: #DDD6FE; color: #6d28d9; }
+    .mc-riposo     { background: #F1F5F9; color: #475569; }
+    .mc-assenza    { background: #FEF3C7; color: #b45309; }
+
+    /* timeline */
+    .tl-item { display: flex; gap: 12px; }
+    .tl-dot  { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .tl-line { width: 2px; background: #e2e8f0; margin: 2px 4px 0; flex-shrink: 0; min-height: 32px; }
+  </style>
+</head>
+<body class="bg-slate-50 h-screen overflow-hidden">
+
+<!-- ===================== LOGIN (screen-1) ===================== -->
+<div id="screen-1" class="screen hidden w-full h-full flex items-center justify-center bg-slate-50">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2">
+        <div class="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center">
+          <i data-lucide="clock" style="width:18px;height:18px;color:white;"></i>
+        </div>
+        <span class="text-2xl font-bold text-slate-900">Turnly</span>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">Gestione turni del personale</p>
+    </div>
+    <div class="card p-6">
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-700 mb-1">Email aziendale</label>
+        <input type="email" value="marco.rossi@ospedale.it" class="input-base">
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-700 mb-1">Password</label>
+        <input type="password" value="••••••••" class="input-base" style="border-color:#fca5a5; background:#fef2f2;">
+      </div>
+      <!-- Error state -->
+      <div class="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+        <i data-lucide="alert-circle" style="width:15px;height:15px;color:#ef4444;margin-top:1px;flex-shrink:0;"></i>
+        <span class="text-xs text-red-700">Credenziali non valide. Verifica email e password e riprova.</span>
+      </div>
+      <button class="btn-primary w-full justify-center mb-3" onclick="showScreen('screen-2')">
+        Accedi
+      </button>
+      <!-- Loading state hint -->
+      <button class="w-full justify-center py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2" style="background:#93c5fd;cursor:default;">
+        <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="white" stroke-width="4"/><path class="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+        Caricamento…
+      </button>
+      <p class="text-xs text-slate-400 text-center mt-2">(stato caricamento — bottone disabilitato)</p>
+    </div>
+    <div class="text-center mt-4">
+      <a href="#" class="text-xs text-blue-500 hover:underline">Password dimenticata?</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== APP LAYOUT (screens 2–22) ===================== -->
+<div id="app-layout" class="flex h-full">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="w-56 bg-white border-r border-slate-200 flex flex-col overflow-y-auto flex-shrink-0">
+    <!-- Logo -->
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2 flex-shrink-0">
+      <div class="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center">
+        <i data-lucide="clock" style="width:14px;height:14px;color:white;"></i>
+      </div>
+      <span class="font-bold text-slate-900 text-sm">Turnly</span>
+    </div>
+
+    <nav class="flex-1 p-2 text-[13px]">
+      <!-- Auth -->
+      <div class="mb-2">
+        <p class="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Auth</p>
+        <div class="nav-item" onclick="showScreen('screen-1')" id="nav-screen-1">
+          <i data-lucide="log-in" class="nav-icon"></i> Login
+        </div>
+      </div>
+      <!-- Admin -->
+      <div class="mb-2">
+        <p class="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Area Admin</p>
+        <div class="nav-item" onclick="showScreen('screen-2')" id="nav-screen-2">
+          <i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-3')" id="nav-screen-3">
+          <i data-lucide="calendar-days" class="nav-icon"></i> Matrice Settimana
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-4')" id="nav-screen-4">
+          <i data-lucide="calendar" class="nav-icon"></i> Matrice Mese
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-5')" id="nav-screen-5">
+          <i data-lucide="pencil" class="nav-icon"></i> Editor Turno
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-6')" id="nav-screen-6">
+          <i data-lucide="refresh-cw" class="nav-icon"></i> Ricorrenza / Ciclo
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-7')" id="nav-screen-7">
+          <i data-lucide="arrow-left-right" class="nav-icon"></i> Scambio Turni
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-8')" id="nav-screen-8">
+          <i data-lucide="user-x" class="nav-icon"></i> Gestione Assenze
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-9')" id="nav-screen-9">
+          <i data-lucide="bar-chart-2" class="nav-icon"></i> Fabbisogni / Coperture
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-10')" id="nav-screen-10">
+          <i data-lucide="users" class="nav-icon"></i> Anagrafica
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-11')" id="nav-screen-11">
+          <i data-lucide="tag" class="nav-icon"></i> Tipologie Turno
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-12')" id="nav-screen-12">
+          <i data-lucide="clock-3" class="nav-icon"></i> Report Ore
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-13')" id="nav-screen-13">
+          <i data-lucide="inbox" class="nav-icon"></i> Approvazioni
+          <span class="ml-auto bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-semibold">4</span>
+        </div>
+      </div>
+      <!-- Dipendente -->
+      <div class="mb-2">
+        <p class="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Area Dipendente</p>
+        <div class="nav-item" onclick="showScreen('screen-14')" id="nav-screen-14">
+          <i data-lucide="calendar-check" class="nav-icon"></i> Calendario
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-15')" id="nav-screen-15">
+          <i data-lucide="clock-4" class="nav-icon"></i> Dettaglio Turno
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-16')" id="nav-screen-16">
+          <i data-lucide="user-circle" class="nav-icon"></i> Profilo Personale
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-17')" id="nav-screen-17">
+          <i data-lucide="sliders-horizontal" class="nav-icon"></i> Disponibilità
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-18')" id="nav-screen-18">
+          <i data-lucide="send" class="nav-icon"></i> Le mie richieste
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-19')" id="nav-screen-19">
+          <i data-lucide="plus-circle" class="nav-icon"></i> Nuova Richiesta
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-20')" id="nav-screen-20">
+          <i data-lucide="file-text" class="nav-icon"></i> Dettaglio Richiesta
+        </div>
+      </div>
+      <!-- Trasversali -->
+      <div class="mb-2">
+        <p class="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Trasversali</p>
+        <div class="nav-item" onclick="showScreen('screen-21')" id="nav-screen-21">
+          <i data-lucide="bell" class="nav-icon"></i> Centro Notifiche
+          <span class="ml-auto bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-semibold">3</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('screen-22')" id="nav-screen-22">
+          <i data-lucide="layers" class="nav-icon"></i> Stati Globali
+        </div>
+      </div>
+    </nav>
+
+    <!-- User footer -->
+    <div class="p-3 border-t border-slate-100 flex-shrink-0">
+      <div class="flex items-center gap-2 px-1">
+        <div class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <span class="text-[11px] font-semibold text-blue-600">MR</span>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs font-medium text-slate-700 truncate">Marco Rossi</div>
+          <div class="text-[11px] text-slate-400">Admin</div>
+        </div>
+        <i data-lucide="log-out" style="width:13px;height:13px;color:#94a3b8;margin-left:auto;cursor:pointer;"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- SCREENS CONTAINER -->
+  <div class="flex-1 overflow-y-auto flex flex-col min-w-0">
+
+<!-- ============================================================
+     SCREEN 2 — Dashboard Admin
+     ============================================================ -->
+<div id="screen-2" class="screen hidden flex flex-col min-h-full">
+  <!-- Top bar -->
+  <div class="app-topbar">
+    <div class="flex-1">
+      <h1 class="text-sm font-semibold text-slate-900">Buongiorno, Marco <span class="font-normal text-slate-400">— lunedì 13 luglio 2026</span></h1>
+    </div>
+    <button class="relative p-2 rounded-lg hover:bg-slate-100" onclick="showScreen('screen-21')">
+      <i data-lucide="bell" style="width:18px;height:18px;color:#64748b;"></i>
+      <span class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] font-semibold flex items-center justify-center">4</span>
+    </button>
+  </div>
+
+  <div class="p-6 flex flex-col gap-5">
+    <!-- KPI row -->
+    <div class="grid grid-cols-4 gap-4">
+      <div class="kpi-tile">
+        <div class="flex items-start justify-between mb-2">
+          <span class="text-xs text-slate-500">Coperture non soddisfatte</span>
+          <div class="w-7 h-7 bg-red-50 rounded-lg flex items-center justify-center">
+            <i data-lucide="alert-triangle" style="width:14px;height:14px;color:#ef4444;"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-red-500">3</div>
+        <div class="text-xs text-slate-400 mt-0.5">questa settimana</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="flex items-start justify-between mb-2">
+          <span class="text-xs text-slate-500">Violazioni aperte</span>
+          <div class="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center">
+            <i data-lucide="shield-alert" style="width:14px;height:14px;color:#f59e0b;"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-amber-500">5</div>
+        <div class="text-xs text-slate-400 mt-0.5">da risolvere</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="flex items-start justify-between mb-2">
+          <span class="text-xs text-slate-500">Ore pianificate settimana</span>
+          <div class="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+            <i data-lucide="clock" style="width:14px;height:14px;color:#3b82f6;"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900">1.240<span class="text-sm font-normal text-slate-400 ml-1">h</span></div>
+        <div class="text-xs text-slate-400 mt-0.5">8–14 lug 2026</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="flex items-start justify-between mb-2">
+          <span class="text-xs text-slate-500">Straordinari mese</span>
+          <div class="w-7 h-7 bg-slate-50 rounded-lg flex items-center justify-center">
+            <i data-lucide="trending-up" style="width:14px;height:14px;color:#64748b;"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900">28<span class="text-sm font-normal text-slate-400 ml-1">h</span></div>
+        <div class="text-xs text-slate-400 mt-0.5">luglio 2026</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4">
+      <!-- Richieste in attesa -->
+      <div class="card p-4 col-span-2">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-slate-900">Richieste in attesa</h2>
+          <button class="text-xs text-blue-500 hover:underline" onclick="showScreen('screen-13')">Vedi tutte →</button>
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer" onclick="showScreen('screen-13')">
+            <span class="badge badge-amber"><i data-lucide="umbrella" style="width:10px;height:10px;"></i> Ferie</span>
+            <span class="text-sm text-slate-700">Anna Verdi</span>
+            <span class="text-xs text-slate-400 ml-auto">20–27 lug</span>
+            <i data-lucide="chevron-right" style="width:14px;height:14px;color:#cbd5e1;"></i>
+          </div>
+          <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer" onclick="showScreen('screen-13')">
+            <span class="badge badge-blue"><i data-lucide="arrow-left-right" style="width:10px;height:10px;"></i> Scambio</span>
+            <span class="text-sm text-slate-700">Luca Bianchi</span>
+            <span class="text-xs text-slate-400 ml-auto">Mar 15 ↔ Mar 16</span>
+            <i data-lucide="chevron-right" style="width:14px;height:14px;color:#cbd5e1;"></i>
+          </div>
+          <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer" onclick="showScreen('screen-13')">
+            <span class="badge badge-slate"><i data-lucide="file-plus" style="width:10px;height:10px;"></i> Turno</span>
+            <span class="text-sm text-slate-700">Paolo Blu</span>
+            <span class="text-xs text-slate-400 ml-auto">Sab 18 lug</span>
+            <i data-lucide="chevron-right" style="width:14px;height:14px;color:#cbd5e1;"></i>
+          </div>
+          <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer" onclick="showScreen('screen-13')">
+            <span class="badge badge-red"><i data-lucide="stethoscope" style="width:10px;height:10px;"></i> Malattia</span>
+            <span class="text-sm text-slate-700">Marco Sala</span>
+            <span class="text-xs text-slate-400 ml-auto">Oggi</span>
+            <i data-lucide="chevron-right" style="width:14px;height:14px;color:#cbd5e1;"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scorciatoie rapide -->
+      <div class="card p-4">
+        <h2 class="text-sm font-semibold text-slate-900 mb-3">Scorciatoie rapide</h2>
+        <div class="flex flex-col gap-2">
+          <button class="btn-primary text-xs" onclick="showScreen('screen-3')">
+            <i data-lucide="plus" style="width:13px;height:13px;"></i> Nuova assegnazione
+          </button>
+          <button class="btn-secondary text-xs" onclick="showScreen('screen-8')">
+            <i data-lucide="user-x" style="width:13px;height:13px;"></i> Gestisci assenze
+          </button>
+          <button class="btn-secondary text-xs" onclick="showScreen('screen-6')">
+            <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Nuovo ciclo
+          </button>
+          <button class="btn-secondary text-xs" onclick="showScreen('screen-12')">
+            <i data-lucide="download" style="width:13px;height:13px;"></i> Export report ore
+          </button>
+        </div>
+        <hr class="my-3 border-slate-100">
+        <h3 class="text-xs font-medium text-slate-500 mb-2">Coperture critiche</h3>
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Mer 15 · Mattina</span>
+            <span class="badge badge-red">-1</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Gio 16 · Notte</span>
+            <span class="badge badge-red">-1</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Dom 19 · Pomerig.</span>
+            <span class="badge badge-amber">±0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 3 — Matrice turni Settimana
+     ============================================================ -->
+<div id="screen-3" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="calendar-days" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Matrice Turni — Settimana</h1>
+    <div class="ml-auto flex items-center gap-2">
+      <button class="btn-secondary text-xs py-1.5" onclick="showScreen('screen-4')">Vista mese</button>
+      <button class="btn-primary text-xs py-1.5">
+        <i data-lucide="plus" style="width:13px;height:13px;"></i> Nuovo turno
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200">
+    <div class="flex items-center gap-1.5">
+      <button class="p-1.5 rounded hover:bg-slate-100"><i data-lucide="chevron-left" style="width:16px;height:16px;color:#64748b;"></i></button>
+      <span class="text-sm font-medium text-slate-700 px-2">8 – 14 luglio 2026</span>
+      <button class="p-1.5 rounded hover:bg-slate-100"><i data-lucide="chevron-right" style="width:16px;height:16px;color:#64748b;"></i></button>
+      <button class="text-xs text-blue-500 px-2 hover:underline">Oggi</button>
+    </div>
+    <div class="h-4 w-px bg-slate-200"></div>
+    <select class="input-base text-xs py-1.5" style="width:140px;">
+      <option>Tutte le qualifiche</option>
+      <option>Infermiere</option>
+      <option>OTA</option>
+      <option>OSS</option>
+      <option>Caposala</option>
+    </select>
+    <div class="relative">
+      <i data-lucide="search" style="width:13px;height:13px;color:#94a3b8;position:absolute;left:9px;top:50%;transform:translateY(-50%);"></i>
+      <input type="text" placeholder="Dipendente…" class="input-base text-xs py-1.5 pl-7" style="width:160px;">
+    </div>
+    <div class="ml-auto flex items-center gap-2 text-xs text-slate-500">
+      <span class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;background:#BFDBFE;border-radius:2px;"></span>Mattina</span>
+      <span class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;background:#BBF7D0;border-radius:2px;"></span>Pomerig.</span>
+      <span class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;background:#DDD6FE;border-radius:2px;"></span>Notte</span>
+      <span class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;background:#F1F5F9;border-radius:2px;"></span>Riposo</span>
+    </div>
+  </div>
+
+  <!-- Matrix table -->
+  <div class="matrix-wrap flex-1 p-4">
+    <table class="matrix-table w-full">
+      <thead>
+        <tr>
+          <th style="min-width:150px;text-align:left;padding:8px 12px;">Dipendente</th>
+          <th>
+            <div class="text-[11px] text-slate-400 font-normal">LUN</div>
+            <div class="text-sm font-semibold text-slate-700">08</div>
+          </th>
+          <th>
+            <div class="text-[11px] text-slate-400 font-normal">MAR</div>
+            <div class="text-sm font-semibold text-slate-700">09</div>
+          </th>
+          <th>
+            <div class="text-[11px] text-slate-400 font-normal">MER</div>
+            <div class="text-sm font-semibold text-slate-700">10</div>
+          </th>
+          <th>
+            <div class="text-[11px] text-slate-400 font-normal">GIO</div>
+            <div class="text-sm font-semibold text-slate-700">11</div>
+          </th>
+          <th>
+            <div class="text-[11px] text-slate-400 font-normal">VEN</div>
+            <div class="text-sm font-semibold text-slate-700">12</div>
+          </th>
+          <th>
+            <div class="text-[11px] text-slate-400 font-normal">SAB</div>
+            <div class="text-sm font-semibold text-slate-700">13</div>
+          </th>
+          <th>
+            <div class="text-[11px] text-slate-400 font-normal">DOM</div>
+            <div class="text-sm font-semibold text-slate-700">14</div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Row: Mario Rossi -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Mario Rossi</div>
+            <div class="text-[11px] text-slate-400">Infermiere</div>
+          </td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <!-- Warning cell -->
+          <td><div class="turn-pomeriggio turn-warn-ring m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="flex items-center gap-1"><span class="font-semibold text-green-800">Pomerig.</span><span title="RB-02: riposo < 11h">⚠</span></div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+        </tr>
+        <!-- Row: Luca Bianchi -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Luca Bianchi</div>
+            <div class="text-[11px] text-slate-400">Infermiere</div>
+          </td>
+          <td><div class="turn-notte m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold" style="color:#6d28d9">Notte</div><div style="color:#7c3aed">22:00–06:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-notte m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold" style="color:#6d28d9">Notte</div><div style="color:#7c3aed">22:00–06:00</div></div></td>
+        </tr>
+        <!-- Row: Anna Verdi -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Anna Verdi</div>
+            <div class="text-[11px] text-slate-400">OTA</div>
+          </td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+        </tr>
+        <!-- Row: Sara Neri — error cell -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Sara Neri</div>
+            <div class="text-[11px] text-slate-400">Infermiere</div>
+          </td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <!-- Error cell: no riposo before notte -->
+          <td><div class="turn-notte turn-error-ring m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="flex items-center gap-1"><span class="font-semibold" style="color:#6d28d9">Notte</span><span title="Violazione bloccante">✕</span></div><div style="color:#7c3aed">22:00–06:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+        </tr>
+        <!-- Row: Paolo Blu -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Paolo Blu</div>
+            <div class="text-[11px] text-slate-400">OSS</div>
+          </td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-notte m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold" style="color:#6d28d9">Notte</div><div style="color:#7c3aed">22:00–06:00</div></div></td>
+          <td><div class="turn-notte m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold" style="color:#6d28d9">Notte</div><div style="color:#7c3aed">22:00–06:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+        </tr>
+        <!-- Row: Elena Russo -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Elena Russo</div>
+            <div class="text-[11px] text-slate-400">Caposala</div>
+          </td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+        </tr>
+        <!-- Row: Marco Sala -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Marco Sala</div>
+            <div class="text-[11px] text-slate-400">Infermiere</div>
+          </td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-pomeriggio m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-green-800">Pomerig.</div><div class="text-green-600">14:00–22:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-notte m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold" style="color:#6d28d9">Notte</div><div style="color:#7c3aed">22:00–06:00</div></div></td>
+          <td><div class="turn-notte m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold" style="color:#6d28d9">Notte</div><div style="color:#7c3aed">22:00–06:00</div></div></td>
+          <td><div class="turn-riposo m-1 rounded p-1.5 text-[11px] leading-tight"><div class="font-medium">Riposo</div></div></td>
+          <td><div class="turn-mattina m-1 rounded p-1.5 text-[11px] leading-tight cursor-pointer" onclick="showScreen('screen-5')"><div class="font-semibold text-blue-800">Mattina</div><div class="text-blue-600">06:00–14:00</div></div></td>
+        </tr>
+        <!-- Row: Giulia Costa — FERIE -->
+        <tr>
+          <td style="padding:6px 12px;">
+            <div class="text-xs font-semibold text-slate-800">Giulia Costa</div>
+            <div class="text-[11px] text-slate-400">OTA</div>
+          </td>
+          <td colspan="7">
+            <div class="turn-assenza m-1 rounded p-1.5 text-[11px] text-center font-medium" style="color:#92400e;">
+              <i data-lucide="umbrella" style="width:11px;height:11px;display:inline;margin-right:4px;"></i>
+              ASSENZA — Ferie · 8–14 lug
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 4 — Matrice turni Mese
+     ============================================================ -->
+<div id="screen-4" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="calendar" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Matrice Turni — Luglio 2026</h1>
+    <div class="ml-auto flex items-center gap-2">
+      <button class="btn-secondary text-xs py-1.5" onclick="showScreen('screen-3')">Vista settimana</button>
+    </div>
+  </div>
+  <div class="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200">
+    <button class="p-1 rounded hover:bg-slate-100"><i data-lucide="chevron-left" style="width:16px;height:16px;color:#64748b;"></i></button>
+    <span class="text-sm font-semibold text-slate-700">Luglio 2026</span>
+    <button class="p-1 rounded hover:bg-slate-100"><i data-lucide="chevron-right" style="width:16px;height:16px;color:#64748b;"></i></button>
+  </div>
+
+  <div class="p-4 overflow-auto">
+    <table class="matrix-table text-xs w-full">
+      <thead>
+        <tr>
+          <th style="min-width:120px;text-align:left;padding:6px 10px;font-size:11px;">Dipendente</th>
+          <!-- Days 1-14 shown as sample -->
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">M</div><div>1</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">M</div><div>2</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">G</div><div>3</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">V</div><div>4</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">S</div><div>5</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">D</div><div>6</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">L</div><div>7</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;background:#eff6ff;"><div class="text-blue-400">L</div><div class="font-bold">8</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;background:#eff6ff;"><div class="text-blue-400">M</div><div class="font-bold">9</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;background:#eff6ff;"><div class="text-blue-400">M</div><div class="font-bold">10</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;background:#eff6ff;"><div class="text-blue-400">G</div><div class="font-bold">11</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;background:#eff6ff;"><div class="text-blue-400">V</div><div class="font-bold">12</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;background:#eff6ff;"><div class="text-blue-400">S</div><div class="font-bold text-blue-600">13</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;background:#eff6ff;"><div class="text-blue-400">D</div><div class="font-bold">14</div></th>
+          <th style="min-width:36px;padding:4px;text-align:center;font-size:10px;"><div class="text-slate-400">L</div><div>15</div></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:6px 10px;"><div class="font-semibold text-slate-800">Mario Rossi</div><div class="text-[10px] text-slate-400">Infermiere</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-notte mx-auto">N</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-pomeriggio mx-auto" style="outline:2px solid #f59e0b;outline-offset:-2px;" title="Avviso riposo">P</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-notte mx-auto">N</div></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 10px;"><div class="font-semibold text-slate-800">Luca Bianchi</div><div class="text-[10px] text-slate-400">Infermiere</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-notte mx-auto">N</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-notte mx-auto">N</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-notte mx-auto">N</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 10px;"><div class="font-semibold text-slate-800">Anna Verdi</div><div class="text-[10px] text-slate-400">OTA</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-notte mx-auto">N</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+          <td colspan="7" style="padding:3px;text-align:center;background:#f0f7ff;">
+            <div class="mc-cell mc-assenza mx-auto" style="width:auto;padding:0 8px;" title="Ferie 8–14 lug">Ferie</div>
+          </td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 10px;"><div class="font-semibold text-slate-800">Sara Neri</div><div class="text-[10px] text-slate-400">Infermiere</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-notte mx-auto">N</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-notte mx-auto" style="outline:2px solid #ef4444;outline-offset:-2px;" title="Violazione">N</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+          <td style="padding:3px;text-align:center;background:#f0f7ff;"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+          <td style="padding:3px;text-align:center;"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="text-xs text-slate-400 mt-3">M = Mattina · P = Pomeriggio · N = Notte · R = Riposo — settimana corrente evidenziata in blu</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 5 — Editor Turno (modale)
+     ============================================================ -->
+<div id="screen-5" class="screen hidden flex flex-col min-h-full relative">
+  <!-- Dimmed background (simulating the matrix behind) -->
+  <div class="absolute inset-0 bg-slate-100 opacity-60 pointer-events-none"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-8 z-10">
+    <div class="card w-full max-w-md shadow-xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">Modifica turno</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Luca Bianchi &middot; Mer 10 luglio</p>
+        </div>
+        <button class="p-1 rounded hover:bg-slate-100" onclick="showScreen('screen-3')">
+          <i data-lucide="x" style="width:16px;height:16px;color:#64748b;"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Tipologia turno</label>
+          <div class="relative">
+            <select class="input-base appearance-none pr-8">
+              <option>— Mattina (06:00–14:00)</option>
+              <option selected>— Pomeriggio (14:00–22:00)</option>
+              <option>— Notte (22:00–06:00)</option>
+              <option>— Riposo</option>
+            </select>
+            <span style="display:inline-block;width:10px;height:10px;background:#BBF7D0;border-radius:2px;position:absolute;right:28px;top:50%;transform:translateY(-50%);"></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Ora inizio</label>
+            <input type="time" value="14:00" class="input-base">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Ora fine</label>
+            <input type="time" value="22:00" class="input-base">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Note</label>
+          <textarea class="input-base resize-none h-16" placeholder="Note aggiuntive sul turno…"></textarea>
+        </div>
+        <!-- Rule violation warning -->
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;color:#f59e0b;margin-top:1px;flex-shrink:0;"></i>
+          <div>
+            <div class="text-xs font-semibold text-amber-800">RB-02 — Avviso riposo insufficiente</div>
+            <div class="text-xs text-amber-700 mt-0.5">Riposo &lt; 11h tra questo turno e il turno precedente (Notte terminata ore 06:00). Consentito con override.</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100">
+        <button class="btn-secondary text-xs" onclick="showScreen('screen-3')">Annulla</button>
+        <button class="btn-primary text-xs">Salva turno</button>
+      </div>
+    </div>
+  </div>
+  <!-- Background hint -->
+  <div class="p-4 text-xs text-slate-400">(Editor turno in modale — clicca "Annulla" per tornare alla matrice)</div>
+</div>
+
+<!-- ============================================================
+     SCREEN 6 — Definizione ricorrenza / ciclo
+     ============================================================ -->
+<div id="screen-6" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="refresh-cw" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Definizione Ricorrenza / Ciclo</h1>
+  </div>
+  <div class="p-6">
+    <!-- Step indicator (dynamic) -->
+    <div class="flex items-center gap-0 mb-2" id="s6-indicator">
+      <div class="step-dot step-active">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot step-pending">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot step-pending">3</div>
+    </div>
+    <div class="flex gap-2 mb-8 text-xs" id="s6-step-labels" style="padding-left:4px;">
+      <span class="flex-1 text-center text-blue-600 font-medium">1. Tipo</span>
+      <span class="flex-1 text-center text-slate-400 font-medium">2. Sequenza</span>
+      <span class="flex-1 text-center text-slate-400 font-medium">3. Anteprima</span>
+    </div>
+
+    <!-- Wizard Step 1: Tipo -->
+    <div id="s6-step1">
+      <p class="text-xs text-slate-500 mb-4">Seleziona il tipo di ricorrenza da generare.</p>
+      <div class="space-y-3 max-w-md">
+        <label class="card p-4 flex items-start gap-3 cursor-pointer border-2 border-blue-400 bg-blue-50">
+          <input type="radio" name="s6tipo" checked class="mt-0.5 accent-blue-500">
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Ricorrenza settimanale</div>
+            <div class="text-xs text-slate-500 mt-0.5">Turno fisso in giorni della settimana (es. ogni lunedì Mattina)</div>
+          </div>
+        </label>
+        <label class="card p-4 flex items-start gap-3 cursor-pointer hover:bg-slate-50">
+          <input type="radio" name="s6tipo" class="mt-0.5 accent-blue-500">
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Ciclo rotativo</div>
+            <div class="text-xs text-slate-500 mt-0.5">Sequenza in rotazione con lunghezza ciclo (es. M → P → N → R)</div>
+          </div>
+        </label>
+      </div>
+      <div class="flex gap-2 mt-6 max-w-md justify-end">
+        <button class="btn-secondary text-xs" onclick="showScreen('screen-3')">Annulla</button>
+        <button class="btn-primary text-xs" onclick="showWizardStep(2)">Avanti →</button>
+      </div>
+    </div>
+
+    <!-- Wizard Step 2: Sequenza + Dipendenti -->
+    <div id="s6-step2" class="hidden">
+      <div class="grid grid-cols-2 gap-6 max-w-2xl">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900 mb-3">Sequenza ciclo</h3>
+          <div class="space-y-2 mb-4">
+            <div class="card p-3 flex items-center gap-3">
+              <div class="mc-cell mc-mattina flex-shrink-0">M</div>
+              <span class="text-xs flex-1 font-medium text-slate-700">Mattina 06:00–14:00</span>
+              <span class="text-[11px] text-slate-400">Pos. 1</span>
+            </div>
+            <div class="card p-3 flex items-center gap-3">
+              <div class="mc-cell mc-pomeriggio flex-shrink-0">P</div>
+              <span class="text-xs flex-1 font-medium text-slate-700">Pomeriggio 14:00–22:00</span>
+              <span class="text-[11px] text-slate-400">Pos. 2</span>
+            </div>
+            <div class="card p-3 flex items-center gap-3">
+              <div class="mc-cell mc-notte flex-shrink-0">N</div>
+              <span class="text-xs flex-1 font-medium text-slate-700">Notte 22:00–06:00</span>
+              <span class="text-[11px] text-slate-400">Pos. 3</span>
+            </div>
+            <div class="card p-3 flex items-center gap-3">
+              <div class="mc-cell mc-riposo flex-shrink-0">R</div>
+              <span class="text-xs flex-1 font-medium text-slate-700">Riposo</span>
+              <span class="text-[11px] text-slate-400">Pos. 4</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs font-medium text-slate-600 mb-1">Data inizio</label><input type="date" value="2026-07-14" class="input-base text-xs"></div>
+            <div><label class="block text-xs font-medium text-slate-600 mb-1">Data fine</label><input type="date" value="2026-08-10" class="input-base text-xs"></div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900 mb-3">Dipendenti target</h3>
+          <div class="space-y-1 mb-3">
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"><input type="checkbox" checked class="accent-blue-500"> Mario Rossi — Infermiere</label>
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"><input type="checkbox" checked class="accent-blue-500"> Luca Bianchi — Infermiere</label>
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"><input type="checkbox" checked class="accent-blue-500"> Sara Neri — OSS</label>
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"><input type="checkbox" checked class="accent-blue-500"> Marco Sala — OSS</label>
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"><input type="checkbox" class="accent-blue-500"> Anna Verdi — OTA</label>
+          </div>
+          <div class="text-[11px] text-slate-400">4 dipendenti selezionati</div>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-6 max-w-2xl justify-end">
+        <button class="btn-secondary text-xs" onclick="showWizardStep(1)">← Indietro</button>
+        <button class="btn-primary text-xs" onclick="showWizardStep(3)">Avanti →</button>
+      </div>
+    </div>
+
+    <!-- Wizard Step 3: Anteprima -->
+    <div id="s6-step3" class="hidden">
+    <div class="grid grid-cols-2 gap-6">
+      <!-- Step 3 content: anteprima -->
+      <div class="card p-5">
+        <h3 class="text-sm font-semibold text-slate-900 mb-3">Anteprima ciclo — Infermieri Turno A</h3>
+        <table class="w-full text-xs border-collapse mb-3">
+          <thead>
+            <tr class="bg-slate-50">
+              <th class="border border-slate-200 p-1.5 text-left">Dipendente</th>
+              <th class="border border-slate-200 p-1.5">Lun</th>
+              <th class="border border-slate-200 p-1.5">Mar</th>
+              <th class="border border-slate-200 p-1.5">Mer</th>
+              <th class="border border-slate-200 p-1.5">Gio</th>
+              <th class="border border-slate-200 p-1.5">Ven</th>
+              <th class="border border-slate-200 p-1.5">Sab</th>
+              <th class="border border-slate-200 p-1.5">Dom</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border border-slate-200 p-1.5 font-medium">M. Rossi</td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-notte mx-auto">N</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+            </tr>
+            <tr>
+              <td class="border border-slate-200 p-1.5 font-medium">L. Bianchi</td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-notte mx-auto">N</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-notte mx-auto">N</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+            </tr>
+            <tr>
+              <td class="border border-slate-200 p-1.5 font-medium">S. Neri</td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-notte mx-auto">N</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-notte mx-auto">N</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+            </tr>
+            <tr>
+              <td class="border border-slate-200 p-1.5 font-medium">M. Sala</td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-notte mx-auto">N</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-riposo mx-auto">R</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-mattina mx-auto">M</div></td>
+              <td class="border border-slate-200 p-1 text-center"><div class="mc-cell mc-pomeriggio mx-auto">P</div></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="text-xs text-slate-400">Periodo: 14 lug – 10 ago 2026 · Ciclo rotativo 4 settimane</div>
+      </div>
+
+      <!-- Riepilogo config + conflitti -->
+      <div class="space-y-4">
+        <div class="card p-4">
+          <h3 class="text-xs font-semibold text-slate-700 mb-3">Configurazione</h3>
+          <dl class="space-y-2 text-xs">
+            <div class="flex justify-between"><dt class="text-slate-500">Tipo</dt><dd class="font-medium">Ciclo rotativo</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">Sequenza</dt><dd class="font-medium">M → P → N → R</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">Inizio</dt><dd class="font-medium">14 lug 2026</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">Fine</dt><dd class="font-medium">10 ago 2026</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500">Dipendenti</dt><dd class="font-medium">4 selezionati</dd></div>
+          </dl>
+        </div>
+        <!-- Conflitti -->
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide="alert-triangle" style="width:14px;height:14px;color:#f59e0b;"></i>
+            <span class="text-xs font-semibold text-amber-800">Conflitti rilevati: 2</span>
+          </div>
+          <ul class="text-xs text-amber-700 space-y-1 pl-5 list-disc">
+            <li>Luca Bianchi — Mer 15: turno esistente (Mattina) verrà sovrascritto</li>
+            <li>Sara Neri — Lun 14: riposo &lt; 11h con turno precedente (Notte dom 13)</li>
+          </ul>
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button class="btn-secondary text-xs" onclick="showWizardStep(2)">← Indietro</button>
+          <button class="btn-primary text-xs" onclick="showScreen('screen-3')">
+            <i data-lucide="zap" style="width:13px;height:13px;"></i> Genera ciclo
+          </button>
+        </div>
+      </div>
+    </div>
+    </div><!-- end s6-step3 -->
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 7 — Scambio turni
+     ============================================================ -->
+<div id="screen-7" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="arrow-left-right" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Scambio Turni</h1>
+  </div>
+  <div class="p-6">
+    <div class="grid grid-cols-3 gap-5">
+      <!-- Turno A -->
+      <div class="card p-5">
+        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Turno A</div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-700">MR</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Mario Rossi</div>
+            <div class="text-xs text-slate-400">Infermiere</div>
+          </div>
+        </div>
+        <div class="turn-notte rounded-lg p-3 mb-3">
+          <div class="text-xs font-bold" style="color:#6d28d9;">Notte</div>
+          <div class="text-xs" style="color:#7c3aed;">22:00 – 06:00</div>
+          <div class="text-xs text-slate-500 mt-0.5">Martedì 15 luglio</div>
+        </div>
+        <div class="text-xs text-slate-500 space-y-1">
+          <div class="flex items-center gap-1.5"><i data-lucide="clock" style="width:11px;height:11px;"></i> Durata: 8h</div>
+          <div class="flex items-center gap-1.5"><i data-lucide="moon" style="width:11px;height:11px;"></i> Turno notturno</div>
+        </div>
+      </div>
+
+      <!-- Swap arrow -->
+      <div class="flex flex-col items-center justify-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+          <i data-lucide="arrow-left-right" style="width:20px;height:20px;color:#3b82f6;"></i>
+        </div>
+        <span class="text-xs text-slate-400 text-center">Scambio proposto</span>
+
+        <!-- Impact panel -->
+        <div class="card p-3 w-full mt-2">
+          <div class="text-[10px] font-semibold text-slate-400 uppercase mb-2">Anteprima impatto</div>
+          <div class="space-y-2">
+            <div class="flex items-start gap-2 text-xs">
+              <i data-lucide="alert-triangle" style="width:12px;height:12px;color:#f59e0b;margin-top:2px;flex-shrink:0;"></i>
+              <div>
+                <div class="font-medium text-slate-700">Mario Rossi</div>
+                <div class="text-amber-600">Riposo &lt; 11h (RB-02) — avviso</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-2 text-xs">
+              <i data-lucide="check-circle" style="width:12px;height:12px;color:#22c55e;margin-top:2px;flex-shrink:0;"></i>
+              <div>
+                <div class="font-medium text-slate-700">Luca Bianchi</div>
+                <div class="text-green-600">Nessuna violazione</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Turno B -->
+      <div class="card p-5">
+        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Turno B</div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-700">LB</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Luca Bianchi</div>
+            <div class="text-xs text-slate-400">Infermiere</div>
+          </div>
+        </div>
+        <div class="turn-mattina rounded-lg p-3 mb-3">
+          <div class="text-xs font-bold text-blue-800">Mattina</div>
+          <div class="text-xs text-blue-600">06:00 – 14:00</div>
+          <div class="text-xs text-slate-500 mt-0.5">Mercoledì 16 luglio</div>
+        </div>
+        <div class="text-xs text-slate-500 space-y-1">
+          <div class="flex items-center gap-1.5"><i data-lucide="clock" style="width:11px;height:11px;"></i> Durata: 8h</div>
+          <div class="flex items-center gap-1.5"><i data-lucide="sun" style="width:11px;height:11px;"></i> Turno mattutino</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-3 mt-6">
+      <button class="btn-danger text-xs" onclick="showScreen('screen-13')">Annulla</button>
+      <button class="btn-success text-xs" onclick="showScreen('screen-13')">
+        <i data-lucide="check" style="width:13px;height:13px;"></i> Conferma scambio
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SCREEN 8 — Gestione assenze
+     ============================================================ -->
+<div id="screen-8" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="user-x" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Gestione Assenze</h1>
+  </div>
+  <div class="p-6 max-w-2xl">
+    <div class="card p-5 mb-5">
+      <h3 class="text-sm font-semibold text-slate-900 mb-4">Registra nuova assenza</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Dipendente</label>
+          <select class="input-base text-sm">
+            <option>Seleziona dipendente…</option>
+            <option selected>Anna Verdi — OTA</option>
+            <option>Mario Rossi — Infermiere</option>
+            <option>Luca Bianchi — Infermiere</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-2">Tipo assenza</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="tipo-assenza" checked class="accent-blue-500"> Ferie
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="tipo-assenza" class="accent-blue-500"> Malattia
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="tipo-assenza" class="accent-blue-500"> Permesso
+            </label>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Data inizio</label>
+            <input type="date" value="2026-07-20" class="input-base text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Data fine</label>
+            <input type="date" value="2026-07-27" class="input-base text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Note</label>
+          <textarea class="input-base resize-none h-16 text-sm" placeholder="Note sull'assenza…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Turni in conflitto -->
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <i data-lucide="alert-circle" style="width:15px;height:15px;color:#f59e0b;"></i>
+        <h3 class="text-sm font-semibold text-slate-900">Turni in conflitto (3)</h3>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">I seguenti turni si sovrappongono al periodo di assenza. Seleziona quelli da annullare.</p>
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="text-slate-500 border-b border-slate-100">
+            <th class="text-left py-2 font-medium">Data</th>
+            <th class="text-left py-2 font-medium">Tipologia</th>
+            <th class="text-left py-2 font-medium">Orari</th>
+            <th class="text-center py-2 font-medium">Annulla</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr>
+            <td class="py-2 font-medium text-slate-700">Lun 20 lug</td>
+            <td><span class="mc-cell mc-pomeriggio" style="width:auto;padding:1px 8px;display:inline-block;border-radius:4px;">Pomeriggio</span></td>
+            <td class="text-slate-500">14:00–22:00</td>
+            <td class="text-center"><input type="checkbox" checked class="accent-blue-500 w-4 h-4"></td>
+          </tr>
+          <tr>
+            <td class="py-2 font-medium text-slate-700">Mar 22 lug</td>
+            <td><span class="mc-cell mc-pomeriggio" style="width:auto;padding:1px 8px;display:inline-block;border-radius:4px;">Pomeriggio</span></td>
+            <td class="text-slate-500">14:00–22:00</td>
+            <td class="text-center"><input type="checkbox" checked class="accent-blue-500 w-4 h-4"></td>
+          </tr>
+          <tr>
+            <td class="py-2 font-medium text-slate-700">Gio 24 lug</td>
+            <td><span class="mc-cell mc-mattina" style="width:auto;padding:1px 8px;display:inline-block;border-radius:4px;">Mattina</span></td>
+            <td class="text-slate-500">06:00–14:00</td>
+            <td class="text-center"><input type="checkbox" class="accent-blue-500 w-4 h-4"></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="flex gap-2 justify-end mt-4">
+        <button class="btn-secondary text-xs" onclick="showScreen('screen-13')">Annulla</button>
+        <button class="btn-primary text-xs" onclick="showScreen('screen-13')">
+          <i data-lucide="check" style="width:13px;height:13px;"></i> Registra assenza
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 9 — Fabbisogni / Coperture
+     ============================================================ -->
+<div id="screen-9" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="bar-chart-2" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Fabbisogni / Coperture</h1>
+  </div>
+  <!-- Tabs -->
+  <div class="flex border-b border-slate-200 bg-white px-6">
+    <button class="tab-btn active" id="tab-setup" onclick="switchTab('setup')">Setup fabbisogni</button>
+    <button class="tab-btn" id="tab-monitor" onclick="switchTab('monitor')">Monitor coperture</button>
+  </div>
+
+  <!-- Tab: Setup -->
+  <div id="tabcontent-setup" class="p-6">
+    <div class="card p-0 overflow-hidden">
+      <table class="w-full text-xs">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="text-left p-3 font-medium text-slate-600 border-b border-slate-200">Fascia oraria</th>
+            <th class="text-left p-3 font-medium text-slate-600 border-b border-slate-200">Qualifica</th>
+            <th class="text-center p-3 font-medium text-slate-600 border-b border-slate-200">Min. richiesto</th>
+            <th class="text-center p-3 font-medium text-slate-600 border-b border-slate-200">Giorni</th>
+            <th class="p-3 border-b border-slate-200"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-700">Mattina (06–14)</td>
+            <td class="p-3 text-slate-600">Infermiere</td>
+            <td class="p-3 text-center"><input type="number" value="3" class="input-base text-xs text-center" style="width:56px;"></td>
+            <td class="p-3 text-center text-slate-500">Lun–Dom</td>
+            <td class="p-3 text-center"><button class="text-slate-400 hover:text-red-500"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button></td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-700">Mattina (06–14)</td>
+            <td class="p-3 text-slate-600">OTA</td>
+            <td class="p-3 text-center"><input type="number" value="2" class="input-base text-xs text-center" style="width:56px;"></td>
+            <td class="p-3 text-center text-slate-500">Lun–Dom</td>
+            <td class="p-3 text-center"><button class="text-slate-400 hover:text-red-500"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button></td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-700">Pomeriggio (14–22)</td>
+            <td class="p-3 text-slate-600">Infermiere</td>
+            <td class="p-3 text-center"><input type="number" value="2" class="input-base text-xs text-center" style="width:56px;"></td>
+            <td class="p-3 text-center text-slate-500">Lun–Dom</td>
+            <td class="p-3 text-center"><button class="text-slate-400 hover:text-red-500"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button></td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-700">Notte (22–06)</td>
+            <td class="p-3 text-slate-600">Infermiere</td>
+            <td class="p-3 text-center"><input type="number" value="2" class="input-base text-xs text-center" style="width:56px;"></td>
+            <td class="p-3 text-center text-slate-500">Lun–Dom</td>
+            <td class="p-3 text-center"><button class="text-slate-400 hover:text-red-500"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button></td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-700">Notte (22–06)</td>
+            <td class="p-3 text-slate-600">OSS</td>
+            <td class="p-3 text-center"><input type="number" value="1" class="input-base text-xs text-center" style="width:56px;"></td>
+            <td class="p-3 text-center text-slate-500">Lun–Dom</td>
+            <td class="p-3 text-center"><button class="text-slate-400 hover:text-red-500"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="p-3 border-t border-slate-100">
+        <button class="btn-secondary text-xs">
+          <i data-lucide="plus" style="width:13px;height:13px;"></i> Aggiungi fascia
+        </button>
+      </div>
+    </div>
+    <div class="flex justify-end mt-4">
+      <button class="btn-primary text-xs">Salva fabbisogni</button>
+    </div>
+  </div>
+
+  <!-- Tab: Monitor (hidden by default) -->
+  <div id="tabcontent-monitor" class="p-6 hidden">
+    <div class="mb-3 flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <button class="p-1 rounded hover:bg-slate-100"><i data-lucide="chevron-left" style="width:16px;height:16px;color:#64748b;"></i></button>
+        <span class="text-sm font-semibold text-slate-700">8 – 14 luglio 2026</span>
+        <button class="p-1 rounded hover:bg-slate-100"><i data-lucide="chevron-right" style="width:16px;height:16px;color:#64748b;"></i></button>
+      </div>
+      <div class="ml-auto flex items-center gap-3 text-xs text-slate-500">
+        <span class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;background:#bbf7d0;border-radius:2px;"></span>OK</span>
+        <span class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;background:#fecaca;border-radius:2px;"></span>Sotto-coperto</span>
+        <span class="flex items-center gap-1"><span style="display:inline-block;width:12px;height:12px;background:#f1f5f9;border-radius:2px;"></span>N/A</span>
+      </div>
+    </div>
+    <div class="card p-0 overflow-hidden">
+      <table class="w-full text-xs border-collapse">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="text-left p-3 border-b border-slate-200 font-medium text-slate-600">Fascia / Qualifica</th>
+            <th class="p-2 border-b border-slate-200 font-medium text-slate-600 text-center">Lun 08</th>
+            <th class="p-2 border-b border-slate-200 font-medium text-slate-600 text-center">Mar 09</th>
+            <th class="p-2 border-b border-slate-200 font-medium text-slate-600 text-center">Mer 10</th>
+            <th class="p-2 border-b border-slate-200 font-medium text-slate-600 text-center">Gio 11</th>
+            <th class="p-2 border-b border-slate-200 font-medium text-slate-600 text-center">Ven 12</th>
+            <th class="p-2 border-b border-slate-200 font-medium text-slate-600 text-center">Sab 13</th>
+            <th class="p-2 border-b border-slate-200 font-medium text-slate-600 text-center">Dom 14</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr>
+            <td class="p-3 font-medium text-slate-700">Mattina — Infermiere (min 3)</td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">3</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">3</span></td>
+            <td style="padding:6px;text-align:center;background:#fef2f2;"><span class="font-semibold text-red-600">2 <span style="font-size:10px;">(-1)</span></span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">3</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">4</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">3</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">3</span></td>
+          </tr>
+          <tr>
+            <td class="p-3 font-medium text-slate-700">Pomeriggio — Infermiere (min 2)</td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">3</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#fef2f2;"><span class="font-semibold text-red-600">1 <span style="font-size:10px;">(-1)</span></span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+          </tr>
+          <tr>
+            <td class="p-3 font-medium text-slate-700">Notte — Infermiere (min 2)</td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#fef2f2;"><span class="font-semibold text-red-600">1 <span style="font-size:10px;">(-1)</span></span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+          </tr>
+          <tr>
+            <td class="p-3 font-medium text-slate-700">Mattina — OTA (min 2)</td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f1f5f9;"><span class="text-slate-400">—</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f0fdf4;"><span class="font-semibold text-green-700">2</span></td>
+            <td style="padding:6px;text-align:center;background:#f1f5f9;"><span class="text-slate-400">—</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 10 — Anagrafica dipendenti
+     ============================================================ -->
+<div id="screen-10" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="users" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Anagrafica Dipendenti</h1>
+    <div class="ml-auto flex items-center gap-2">
+      <button class="btn-primary text-xs" onclick="togglePanel('panel-anag')">
+        <i data-lucide="user-plus" style="width:13px;height:13px;"></i> Nuovo dipendente
+      </button>
+    </div>
+  </div>
+  <div class="flex flex-1 overflow-hidden">
+    <!-- Table area -->
+    <div class="flex-1 p-4 overflow-y-auto">
+      <!-- Filters -->
+      <div class="flex gap-3 mb-4">
+        <div class="relative flex-1 max-w-xs">
+          <i data-lucide="search" style="width:13px;height:13px;color:#94a3b8;position:absolute;left:9px;top:50%;transform:translateY(-50%);"></i>
+          <input type="text" placeholder="Cerca dipendente…" class="input-base text-sm pl-7">
+        </div>
+        <select class="input-base text-sm" style="width:160px;">
+          <option>Tutte le qualifiche</option>
+          <option>Infermiere</option>
+          <option>OTA</option>
+          <option>OSS</option>
+          <option>Caposala</option>
+        </select>
+        <select class="input-base text-sm" style="width:130px;">
+          <option>Tutti gli stati</option>
+          <option>Attivo</option>
+          <option>Inattivo</option>
+        </select>
+      </div>
+      <div class="card overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left p-3 text-xs font-semibold text-slate-500">Nome</th>
+              <th class="text-left p-3 text-xs font-semibold text-slate-500">Qualifica</th>
+              <th class="text-left p-3 text-xs font-semibold text-slate-500">Contratto</th>
+              <th class="text-center p-3 text-xs font-semibold text-slate-500">Ore/sett</th>
+              <th class="text-left p-3 text-xs font-semibold text-slate-500">Stato</th>
+              <th class="p-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr class="hover:bg-slate-50 cursor-pointer" onclick="togglePanel('panel-anag')">
+              <td class="p-3"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-[11px] font-bold text-blue-600">MR</div><span class="font-medium text-slate-800">Mario Rossi</span></div></td>
+              <td class="p-3 text-slate-600">Infermiere</td>
+              <td class="p-3 text-slate-500">Tempo indeterminato</td>
+              <td class="p-3 text-center text-slate-600">36</td>
+              <td class="p-3"><span class="badge badge-green">Attivo</span></td>
+              <td class="p-3 text-center"><button class="text-slate-400 hover:text-blue-500"><i data-lucide="pencil" style="width:13px;height:13px;"></i></button></td>
+            </tr>
+            <tr class="hover:bg-slate-50 cursor-pointer" onclick="togglePanel('panel-anag')">
+              <td class="p-3"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-[11px] font-bold text-green-600">LB</div><span class="font-medium text-slate-800">Luca Bianchi</span></div></td>
+              <td class="p-3 text-slate-600">Infermiere</td>
+              <td class="p-3 text-slate-500">Tempo indeterminato</td>
+              <td class="p-3 text-center text-slate-600">36</td>
+              <td class="p-3"><span class="badge badge-green">Attivo</span></td>
+              <td class="p-3 text-center"><button class="text-slate-400 hover:text-blue-500"><i data-lucide="pencil" style="width:13px;height:13px;"></i></button></td>
+            </tr>
+            <tr class="hover:bg-slate-50 cursor-pointer" onclick="togglePanel('panel-anag')">
+              <td class="p-3"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-[11px] font-bold text-amber-600">AV</div><span class="font-medium text-slate-800">Anna Verdi</span></div></td>
+              <td class="p-3 text-slate-600">OTA</td>
+              <td class="p-3 text-slate-500">Tempo determinato</td>
+              <td class="p-3 text-center text-slate-600">24</td>
+              <td class="p-3"><span class="badge badge-green">Attivo</span></td>
+              <td class="p-3 text-center"><button class="text-slate-400 hover:text-blue-500"><i data-lucide="pencil" style="width:13px;height:13px;"></i></button></td>
+            </tr>
+            <tr class="hover:bg-slate-50 cursor-pointer" onclick="togglePanel('panel-anag')">
+              <td class="p-3"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-[11px] font-bold text-purple-600">SN</div><span class="font-medium text-slate-800">Sara Neri</span></div></td>
+              <td class="p-3 text-slate-600">Infermiere</td>
+              <td class="p-3 text-slate-500">Tempo indeterminato</td>
+              <td class="p-3 text-center text-slate-600">36</td>
+              <td class="p-3"><span class="badge badge-green">Attivo</span></td>
+              <td class="p-3 text-center"><button class="text-slate-400 hover:text-blue-500"><i data-lucide="pencil" style="width:13px;height:13px;"></i></button></td>
+            </tr>
+            <tr class="hover:bg-slate-50 cursor-pointer" onclick="togglePanel('panel-anag')">
+              <td class="p-3"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-600">PB</div><span class="font-medium text-slate-800">Paolo Blu</span></div></td>
+              <td class="p-3 text-slate-600">OSS</td>
+              <td class="p-3 text-slate-500">Part-time</td>
+              <td class="p-3 text-center text-slate-600">20</td>
+              <td class="p-3"><span class="badge badge-green">Attivo</span></td>
+              <td class="p-3 text-center"><button class="text-slate-400 hover:text-blue-500"><i data-lucide="pencil" style="width:13px;height:13px;"></i></button></td>
+            </tr>
+            <tr class="hover:bg-slate-50 cursor-pointer" onclick="togglePanel('panel-anag')">
+              <td class="p-3"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-[11px] font-bold text-red-600">GC</div><span class="font-medium text-slate-800">Giulia Costa</span></div></td>
+              <td class="p-3 text-slate-600">OTA</td>
+              <td class="p-3 text-slate-500">Tempo determinato</td>
+              <td class="p-3 text-center text-slate-600">24</td>
+              <td class="p-3"><span class="badge badge-slate">Inattivo</span></td>
+              <td class="p-3 text-center"><button class="text-slate-400 hover:text-blue-500"><i data-lucide="pencil" style="width:13px;height:13px;"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Side panel (detail/edit) -->
+    <div id="panel-anag" class="hidden w-72 border-l border-slate-200 bg-white overflow-y-auto flex-shrink-0">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <h3 class="text-sm font-semibold text-slate-900">Modifica dipendente</h3>
+        <button onclick="togglePanel('panel-anag')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" style="width:15px;height:15px;"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-600">MR</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Mario Rossi</div>
+            <div class="text-xs text-slate-400">ID: #0042</div>
+          </div>
+        </div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Nome</label><input class="input-base text-xs" value="Mario"></div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Cognome</label><input class="input-base text-xs" value="Rossi"></div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Email</label><input class="input-base text-xs" value="mario.rossi@ospedale.it"></div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Qualifica</label>
+          <select class="input-base text-xs"><option selected>Infermiere</option><option>OTA</option><option>OSS</option><option>Caposala</option></select>
+        </div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Ore contrattuali/sett</label><input class="input-base text-xs" value="36"></div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Tipo contratto</label>
+          <select class="input-base text-xs"><option selected>Tempo indeterminato</option><option>Tempo determinato</option><option>Part-time</option></select>
+        </div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Ruolo</label>
+          <select class="input-base text-xs"><option>Dipendente</option><option>Admin</option></select>
+        </div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Stato</label>
+          <select class="input-base text-xs"><option selected>Attivo</option><option>Inattivo</option></select>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button class="btn-secondary text-xs flex-1 justify-center" onclick="togglePanel('panel-anag')">Annulla</button>
+          <button class="btn-primary text-xs flex-1 justify-center">Salva</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 11 — Tipologie turno
+     ============================================================ -->
+<div id="screen-11" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="tag" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Tipologie Turno</h1>
+    <div class="ml-auto">
+      <button class="btn-primary text-xs">
+        <i data-lucide="plus" style="width:13px;height:13px;"></i> Nuova tipologia
+      </button>
+    </div>
+  </div>
+  <div class="p-6">
+    <div class="grid grid-cols-2 gap-4 max-w-3xl">
+      <!-- Mattina -->
+      <div class="card p-4 flex gap-3">
+        <div style="width:4px;border-radius:2px;background:#3B82F6;flex-shrink:0;"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-semibold text-slate-900">Mattina</span>
+            <span class="badge badge-green">Attivo</span>
+          </div>
+          <div class="text-xs text-slate-500">06:00 – 14:00</div>
+          <div class="text-xs text-slate-400 mt-0.5">Durata: 8h · Pausa: 30 min</div>
+        </div>
+        <button class="text-slate-400 hover:text-blue-500 self-start"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+      </div>
+      <!-- Pomeriggio -->
+      <div class="card p-4 flex gap-3">
+        <div style="width:4px;border-radius:2px;background:#22C55E;flex-shrink:0;"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-semibold text-slate-900">Pomeriggio</span>
+            <span class="badge badge-green">Attivo</span>
+          </div>
+          <div class="text-xs text-slate-500">14:00 – 22:00</div>
+          <div class="text-xs text-slate-400 mt-0.5">Durata: 8h · Pausa: 30 min</div>
+        </div>
+        <button class="text-slate-400 hover:text-blue-500 self-start"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+      </div>
+      <!-- Notte -->
+      <div class="card p-4 flex gap-3">
+        <div style="width:4px;border-radius:2px;background:#8B5CF6;flex-shrink:0;"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-semibold text-slate-900">Notte</span>
+              <span class="badge" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;"><i data-lucide="moon" style="width:9px;height:9px;display:inline;"></i> Notturno</span>
+            </div>
+            <span class="badge badge-green">Attivo</span>
+          </div>
+          <div class="text-xs text-slate-500">22:00 – 06:00</div>
+          <div class="text-xs text-slate-400 mt-0.5">Durata: 8h · Attraversa mezzanotte</div>
+        </div>
+        <button class="text-slate-400 hover:text-blue-500 self-start"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+      </div>
+      <!-- Riposo -->
+      <div class="card p-4 flex gap-3">
+        <div style="width:4px;border-radius:2px;background:#94A3B8;flex-shrink:0;"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-semibold text-slate-900">Riposo</span>
+            <span class="badge badge-green">Attivo</span>
+          </div>
+          <div class="text-xs text-slate-500">—</div>
+          <div class="text-xs text-slate-400 mt-0.5">Giorno libero · Nessun orario</div>
+        </div>
+        <button class="text-slate-400 hover:text-blue-500 self-start"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+      </div>
+      <!-- Lungo -->
+      <div class="card p-4 flex gap-3">
+        <div style="width:4px;border-radius:2px;background:#F59E0B;flex-shrink:0;"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-semibold text-slate-900">Turno Lungo</span>
+            <span class="badge badge-slate">Inattivo</span>
+          </div>
+          <div class="text-xs text-slate-500">06:00 – 18:00</div>
+          <div class="text-xs text-slate-400 mt-0.5">Durata: 12h · Pausa: 60 min</div>
+        </div>
+        <button class="text-slate-400 hover:text-blue-500 self-start"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+      </div>
+    </div>
+
+    <!-- Editor modale (stato espanso) -->
+    <div class="card p-5 max-w-sm mt-6 border-blue-200" style="border-color:#bfdbfe;background:#f0f7ff;">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-semibold text-slate-900">Modifica — Mattina</h4>
+        <span class="text-[10px] text-slate-400 bg-blue-100 px-2 py-0.5 rounded">Editor inline</span>
+      </div>
+      <div class="space-y-3">
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Nome</label><input class="input-base text-xs" value="Mattina"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block text-xs font-medium text-slate-600 mb-1">Ora inizio</label><input type="time" value="06:00" class="input-base text-xs"></div>
+          <div><label class="block text-xs font-medium text-slate-600 mb-1">Ora fine</label><input type="time" value="14:00" class="input-base text-xs"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block text-xs font-medium text-slate-600 mb-1">Colore</label>
+            <div class="flex items-center gap-2">
+              <input type="color" value="#BFDBFE" style="width:32px;height:28px;padding:2px;border:1px solid #e2e8f0;border-radius:4px;cursor:pointer;">
+              <span class="text-xs text-slate-500">#BFDBFE</span>
+            </div>
+          </div>
+          <div><label class="block text-xs font-medium text-slate-600 mb-1">Pausa (min)</label><input type="number" value="30" class="input-base text-xs"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-600">Attivo</span>
+          <label class="toggle-wrap"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-secondary text-xs flex-1 justify-center">Annulla</button>
+          <button class="btn-primary text-xs flex-1 justify-center">Salva</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 12 — Report straordinari / ore
+     ============================================================ -->
+<div id="screen-12" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="clock-3" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Report Straordinari / Ore</h1>
+    <div class="ml-auto">
+      <button class="btn-secondary text-xs">
+        <i data-lucide="download" style="width:13px;height:13px;"></i> Export CSV
+      </button>
+    </div>
+  </div>
+  <div class="p-6">
+    <!-- Filters -->
+    <div class="card p-4 mb-4 flex items-end gap-4">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Periodo — Da</label>
+        <input type="date" value="2026-07-01" class="input-base text-sm" style="width:150px;">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">A</label>
+        <input type="date" value="2026-07-31" class="input-base text-sm" style="width:150px;">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Dipendenti</label>
+        <select class="input-base text-sm" style="width:180px;"><option>Tutti i dipendenti</option></select>
+      </div>
+      <button class="btn-primary text-xs py-2">Aggiorna</button>
+    </div>
+
+    <div class="card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="text-left p-3 text-xs font-semibold text-slate-500">Dipendente</th>
+            <th class="text-center p-3 text-xs font-semibold text-slate-500">Ore ordinarie</th>
+            <th class="text-center p-3 text-xs font-semibold text-slate-500">Ore straordinarie</th>
+            <th class="text-center p-3 text-xs font-semibold text-slate-500">Totale</th>
+            <th class="text-center p-3 text-xs font-semibold text-slate-500">Note</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-800">Mario Rossi</td>
+            <td class="p-3 text-center text-slate-600">152h</td>
+            <td class="p-3 text-center font-semibold" style="color:#ef4444;">18h</td>
+            <td class="p-3 text-center font-semibold text-slate-700">170h</td>
+            <td class="p-3 text-center"><i data-lucide="alert-triangle" style="width:14px;height:14px;color:#f59e0b;" title="Straordinario > soglia mensile (16h)"></i></td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-800">Luca Bianchi</td>
+            <td class="p-3 text-center text-slate-600">160h</td>
+            <td class="p-3 text-center text-slate-600">4h</td>
+            <td class="p-3 text-center font-semibold text-slate-700">164h</td>
+            <td class="p-3 text-center text-slate-300">—</td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-800">Anna Verdi</td>
+            <td class="p-3 text-center text-slate-600">104h</td>
+            <td class="p-3 text-center text-slate-600">0h</td>
+            <td class="p-3 text-center font-semibold text-slate-700">104h</td>
+            <td class="p-3 text-center text-slate-300">—</td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-800">Sara Neri</td>
+            <td class="p-3 text-center text-slate-600">152h</td>
+            <td class="p-3 text-center font-semibold" style="color:#ef4444;">20h</td>
+            <td class="p-3 text-center font-semibold text-slate-700">172h</td>
+            <td class="p-3 text-center"><i data-lucide="alert-triangle" style="width:14px;height:14px;color:#f59e0b;" title="Straordinario > soglia mensile (16h)"></i></td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-800">Paolo Blu</td>
+            <td class="p-3 text-center text-slate-600">88h</td>
+            <td class="p-3 text-center text-slate-600">6h</td>
+            <td class="p-3 text-center font-semibold text-slate-700">94h</td>
+            <td class="p-3 text-center text-slate-300">—</td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium text-slate-800">Elena Russo</td>
+            <td class="p-3 text-center text-slate-600">160h</td>
+            <td class="p-3 text-center text-slate-600">0h</td>
+            <td class="p-3 text-center font-semibold text-slate-700">160h</td>
+            <td class="p-3 text-center text-slate-300">—</td>
+          </tr>
+        </tbody>
+        <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+          <tr>
+            <td class="p-3 text-xs font-bold text-slate-700">TOTALE</td>
+            <td class="p-3 text-center text-xs font-bold text-slate-700">816h</td>
+            <td class="p-3 text-center text-xs font-bold" style="color:#ef4444;">48h</td>
+            <td class="p-3 text-center text-xs font-bold text-slate-700">864h</td>
+            <td class="p-3 text-center text-xs text-slate-400">2 avvisi</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 13 — Coda richieste / Approvazioni
+     ============================================================ -->
+<div id="screen-13" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="inbox" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Approvazioni</h1>
+    <span class="ml-2 badge badge-red text-xs">4 in attesa</span>
+  </div>
+  <div class="flex flex-1 overflow-hidden">
+    <!-- Left: list -->
+    <div class="w-72 border-r border-slate-200 bg-white overflow-y-auto flex-shrink-0">
+      <div class="p-3 border-b border-slate-100">
+        <div class="relative">
+          <i data-lucide="search" style="width:13px;height:13px;color:#94a3b8;position:absolute;left:8px;top:50%;transform:translateY(-50%);"></i>
+          <input type="text" placeholder="Cerca richiesta…" class="input-base text-xs pl-7 py-1.5">
+        </div>
+      </div>
+      <div class="divide-y divide-slate-100">
+        <!-- Item 1 — selected -->
+        <div id="s13-item-1" class="p-3 bg-blue-50 border-l-2 border-blue-500 cursor-pointer" onclick="selectRequest(1)">
+          <div class="flex items-center justify-between mb-1">
+            <span class="badge badge-amber text-[11px]"><i data-lucide="umbrella" style="width:9px;height:9px;display:inline;"></i> Ferie</span>
+            <span class="text-[11px] text-slate-400">oggi</span>
+          </div>
+          <div class="text-xs font-semibold text-slate-900">Anna Verdi</div>
+          <div class="text-[11px] text-slate-500">20–27 lug 2026</div>
+        </div>
+        <!-- Item 2 -->
+        <div id="s13-item-2" class="p-3 hover:bg-slate-50 cursor-pointer" onclick="selectRequest(2)">
+          <div class="flex items-center justify-between mb-1">
+            <span class="badge badge-blue text-[11px]"><i data-lucide="arrow-left-right" style="width:9px;height:9px;display:inline;"></i> Scambio</span>
+            <span class="text-[11px] text-slate-400">ieri</span>
+          </div>
+          <div class="text-xs font-semibold text-slate-900">Luca Bianchi</div>
+          <div class="text-[11px] text-slate-500">Mar 15 ↔ Mar 16</div>
+        </div>
+        <!-- Item 3 -->
+        <div id="s13-item-3" class="p-3 hover:bg-slate-50 cursor-pointer" onclick="selectRequest(3)">
+          <div class="flex items-center justify-between mb-1">
+            <span class="badge badge-slate text-[11px]"><i data-lucide="file-plus" style="width:9px;height:9px;display:inline;"></i> Turno</span>
+            <span class="text-[11px] text-slate-400">2 giorni fa</span>
+          </div>
+          <div class="text-xs font-semibold text-slate-900">Paolo Blu</div>
+          <div class="text-[11px] text-slate-500">Sab 18 lug · extra</div>
+        </div>
+        <!-- Item 4 -->
+        <div id="s13-item-4" class="p-3 hover:bg-slate-50 cursor-pointer" onclick="selectRequest(4)">
+          <div class="flex items-center justify-between mb-1">
+            <span class="badge badge-red text-[11px]"><i data-lucide="stethoscope" style="width:9px;height:9px;display:inline;"></i> Malattia</span>
+            <span class="text-[11px] text-slate-400">oggi</span>
+          </div>
+          <div class="text-xs font-semibold text-slate-900">Marco Sala</div>
+          <div class="text-[11px] text-slate-500">Oggi — urgente</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: detail -->
+    <div class="flex-1 p-6 overflow-y-auto">
+      <div id="s13-detail-1" class="max-w-xl">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Richiesta assenza — Ferie</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Inviata il 13 luglio 2026 · ID #RQ-0291</p>
+          </div>
+          <span class="badge badge-amber">In attesa</span>
+        </div>
+
+        <!-- Richiedente -->
+        <div class="card p-4 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-sm font-bold text-amber-700">AV</div>
+            <div>
+              <div class="text-sm font-semibold text-slate-900">Anna Verdi</div>
+              <div class="text-xs text-slate-400">OTA · Reparto Medicina</div>
+            </div>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div><span class="text-slate-500">Tipo:</span> <span class="font-medium text-slate-700">Ferie</span></div>
+            <div><span class="text-slate-500">Periodo:</span> <span class="font-medium text-slate-700">20–27 luglio 2026</span></div>
+            <div><span class="text-slate-500">Durata:</span> <span class="font-medium text-slate-700">8 giorni</span></div>
+            <div><span class="text-slate-500">Residuo ferie:</span> <span class="font-medium text-slate-700">14 giorni</span></div>
+          </div>
+        </div>
+
+        <!-- Impatto -->
+        <div class="card p-4 mb-4">
+          <h3 class="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1">
+            <i data-lucide="activity" style="width:13px;height:13px;color:#64748b;"></i> Pannello impatto
+          </h3>
+          <div class="text-xs text-slate-600 mb-2">Turni in conflitto: <span class="font-semibold text-amber-600">3</span> (verranno segnalati all'admin)</div>
+          <div class="space-y-1 text-xs text-slate-500 pl-3">
+            <div>• Lun 20 lug — Pomeriggio 14:00–22:00</div>
+            <div>• Mar 22 lug — Pomeriggio 14:00–22:00</div>
+            <div>• Gio 24 lug — Mattina 06:00–14:00</div>
+          </div>
+        </div>
+
+        <!-- Stato validazione -->
+        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3 mb-5">
+          <i data-lucide="check-circle" style="width:16px;height:16px;color:#22c55e;flex-shrink:0;"></i>
+          <div>
+            <div class="text-xs font-semibold text-green-800">Nessuna violazione bloccante</div>
+            <div class="text-xs text-green-700">Ferie approvabili. La copertura richiederà riallocazione.</div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button class="btn-danger text-xs flex-1 justify-center">
+            <i data-lucide="x" style="width:13px;height:13px;"></i> Rifiuta
+          </button>
+          <button class="btn-success text-xs flex-1 justify-center">
+            <i data-lucide="check" style="width:13px;height:13px;"></i> Approva
+          </button>
+        </div>
+      </div>
+
+      <!-- Detail 2 — Luca Bianchi Scambio -->
+      <div id="s13-detail-2" class="hidden max-w-xl">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Richiesta scambio turno</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Inviata il 12 luglio 2026 · ID #RQ-0290</p>
+          </div>
+          <span class="badge badge-amber">In attesa</span>
+        </div>
+        <div class="card p-4 mb-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700">LB</div>
+            <div>
+              <div class="text-sm font-semibold text-slate-900">Luca Bianchi</div>
+              <div class="text-xs text-slate-400">Infermiere · Reparto Medicina</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="turn-mattina rounded p-2"><div class="font-semibold text-blue-800">Turno proprio</div><div class="text-blue-700">Mattina 06:00–14:00</div><div class="text-blue-600">Mar 15 lug</div></div>
+            <div class="turn-pomeriggio rounded p-2"><div class="font-semibold text-green-800">Turno collega</div><div class="text-green-700">Pomeriggio 14:00–22:00</div><div class="text-green-600">Mar 16 lug</div></div>
+          </div>
+        </div>
+        <div class="card p-4 mb-4">
+          <h3 class="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1"><i data-lucide="activity" style="width:13px;height:13px;color:#64748b;"></i> Pannello impatto</h3>
+          <div class="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mb-2">
+            <i data-lucide="alert-triangle" style="width:12px;height:12px;flex-shrink:0;"></i> Luca: riposo &lt; 11h con turno precedente (RB-02) — avviso
+          </div>
+          <div class="text-xs text-slate-500">Accettazione collega: <span class="font-medium text-green-700">Confermata da Mario Rossi</span></div>
+        </div>
+        <div class="flex gap-3">
+          <button class="btn-danger text-xs flex-1 justify-center"><i data-lucide="x" style="width:13px;height:13px;"></i> Rifiuta</button>
+          <button class="btn-success text-xs flex-1 justify-center"><i data-lucide="check" style="width:13px;height:13px;"></i> Approva</button>
+        </div>
+      </div>
+
+      <!-- Detail 3 — Paolo Blu Nuovo Turno -->
+      <div id="s13-detail-3" class="hidden max-w-xl">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Richiesta nuovo turno</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Inviata il 11 luglio 2026 · ID #RQ-0289</p>
+          </div>
+          <span class="badge badge-amber">In attesa</span>
+        </div>
+        <div class="card p-4 mb-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">PB</div>
+            <div>
+              <div class="text-sm font-semibold text-slate-900">Paolo Blu</div>
+              <div class="text-xs text-slate-400">OSS · Reparto Chirurgia</div>
+            </div>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div><span class="text-slate-500">Tipo:</span> <span class="font-medium">Disponibilità copertura</span></div>
+            <div><span class="text-slate-500">Giorno:</span> <span class="font-medium">Sabato 18 luglio 2026</span></div>
+            <div><span class="text-slate-500">Turno proposto:</span> <span class="font-medium">Pomeriggio 14:00–22:00</span></div>
+          </div>
+        </div>
+        <div class="card p-4 mb-4">
+          <h3 class="text-xs font-semibold text-slate-700 mb-2">Pannello impatto</h3>
+          <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded p-2 text-xs text-green-800">
+            <i data-lucide="check-circle" style="width:13px;height:13px;flex-shrink:0;"></i> Nessuna violazione bloccante
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button class="btn-danger text-xs flex-1 justify-center"><i data-lucide="x" style="width:13px;height:13px;"></i> Rifiuta</button>
+          <button class="btn-success text-xs flex-1 justify-center"><i data-lucide="check" style="width:13px;height:13px;"></i> Approva</button>
+        </div>
+      </div>
+
+      <!-- Detail 4 — Marco Sala Malattia urgente -->
+      <div id="s13-detail-4" class="hidden max-w-xl">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Richiesta assenza — Malattia</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Inviata oggi 13 luglio 2026 · ID #RQ-0292</p>
+          </div>
+          <span class="badge badge-red">Urgente</span>
+        </div>
+        <div class="card p-4 mb-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-sm font-bold text-red-700">MS</div>
+            <div>
+              <div class="text-sm font-semibold text-slate-900">Marco Sala</div>
+              <div class="text-xs text-slate-400">OSS · Reparto Medicina</div>
+            </div>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div><span class="text-slate-500">Tipo:</span> <span class="font-medium">Malattia</span></div>
+            <div><span class="text-slate-500">Periodo:</span> <span class="font-medium">Oggi — a tempo indeterminato</span></div>
+          </div>
+        </div>
+        <div class="card p-4 mb-4">
+          <h3 class="text-xs font-semibold text-slate-700 mb-2">Pannello impatto</h3>
+          <div class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
+            ⚠ Turno Notte 22:00–06:00 (stanotte) in conflitto. Sotto-copertura reparto: −1 OSS notte.
+          </div>
+        </div>
+        <div class="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-xs text-red-800">
+          <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0;"></i> Approvazione bloccata: turno notturno non riassegnato. Riassegnare prima di approvare (RB-14).
+        </div>
+        <div class="flex gap-3">
+          <button class="btn-danger text-xs flex-1 justify-center"><i data-lucide="x" style="width:13px;height:13px;"></i> Rifiuta</button>
+          <button class="btn-success text-xs flex-1 justify-center opacity-50 cursor-not-allowed" disabled>Approva (bloccata)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 14 — Calendario dipendente
+     ============================================================ -->
+<div id="screen-14" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="calendar-check" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">I miei turni — Luglio 2026</h1>
+    <div class="ml-auto flex items-center gap-2">
+      <button class="p-1.5 rounded hover:bg-slate-100"><i data-lucide="chevron-left" style="width:16px;height:16px;color:#64748b;"></i></button>
+      <span class="text-sm font-medium text-slate-600">Luglio 2026</span>
+      <button class="p-1.5 rounded hover:bg-slate-100"><i data-lucide="chevron-right" style="width:16px;height:16px;color:#64748b;"></i></button>
+      <button class="btn-secondary text-xs">
+        <i data-lucide="download" style="width:13px;height:13px;"></i> Export .ics
+      </button>
+    </div>
+  </div>
+  <!-- View tabs -->
+  <div class="flex border-b border-slate-200 bg-white px-6">
+    <button class="tab-btn">Giorno</button>
+    <button class="tab-btn active">Settimana</button>
+    <button class="tab-btn">Mese</button>
+  </div>
+  <div class="p-4 flex-1">
+    <!-- Week view: 7 columns -->
+    <div class="grid grid-cols-7 gap-2 mb-4">
+      <div class="text-center text-xs font-semibold text-slate-500 pb-1 border-b border-slate-200">LUN 8</div>
+      <div class="text-center text-xs font-semibold text-slate-500 pb-1 border-b border-slate-200">MAR 9</div>
+      <div class="text-center text-xs font-semibold text-slate-500 pb-1 border-b border-slate-200">MER 10</div>
+      <div class="text-center text-xs font-semibold text-slate-500 pb-1 border-b border-slate-200">GIO 11</div>
+      <div class="text-center text-xs font-semibold text-slate-500 pb-1 border-b border-slate-200">VEN 12</div>
+      <div class="text-center text-xs font-semibold text-blue-500 pb-1 border-b border-blue-300">SAB 13</div>
+      <div class="text-center text-xs font-semibold text-slate-500 pb-1 border-b border-slate-200">DOM 14</div>
+    </div>
+    <div class="grid grid-cols-7 gap-2 min-h-48">
+      <div>
+        <div class="turn-mattina rounded-lg p-2 text-xs cursor-pointer hover:opacity-90" onclick="showScreen('screen-15')">
+          <div class="font-bold text-blue-800">Mattina</div>
+          <div class="text-blue-600">06:00–14:00</div>
+          <div class="text-blue-400 mt-1">8h</div>
+        </div>
+      </div>
+      <div>
+        <div class="turn-notte rounded-lg p-2 text-xs cursor-pointer hover:opacity-90" onclick="showScreen('screen-15')">
+          <div class="font-bold" style="color:#6d28d9;">Notte</div>
+          <div style="color:#7c3aed;">22:00–06:00</div>
+          <div style="color:#a78bfa;" class="mt-1">8h</div>
+        </div>
+      </div>
+      <div>
+        <div class="turn-riposo rounded-lg p-2 text-xs">
+          <div class="font-medium text-slate-500">Riposo</div>
+        </div>
+      </div>
+      <div>
+        <div class="turn-mattina rounded-lg p-2 text-xs cursor-pointer hover:opacity-90" onclick="showScreen('screen-15')">
+          <div class="font-bold text-blue-800">Mattina</div>
+          <div class="text-blue-600">06:00–14:00</div>
+          <div class="text-blue-400 mt-1">8h</div>
+        </div>
+      </div>
+      <div>
+        <div class="turn-pomeriggio rounded-lg p-2 text-xs cursor-pointer hover:opacity-90" onclick="showScreen('screen-15')">
+          <div class="font-bold text-green-800">Pomerig.</div>
+          <div class="text-green-600">14:00–22:00</div>
+          <div class="text-green-400 mt-1">8h</div>
+        </div>
+      </div>
+      <div>
+        <div class="turn-riposo rounded-lg p-2 text-xs">
+          <div class="font-medium text-slate-500">Riposo</div>
+        </div>
+      </div>
+      <div>
+        <div class="turn-mattina rounded-lg p-2 text-xs cursor-pointer hover:opacity-90" onclick="showScreen('screen-15')">
+          <div class="font-bold text-blue-800">Mattina</div>
+          <div class="text-blue-600">06:00–14:00</div>
+          <div class="text-blue-400 mt-1">8h</div>
+        </div>
+      </div>
+    </div>
+    <!-- Hours summary -->
+    <div class="card p-3 mt-4 flex items-center gap-6 text-sm">
+      <div class="flex items-center gap-2">
+        <i data-lucide="clock" style="width:14px;height:14px;color:#3b82f6;"></i>
+        <span class="text-slate-500">Ore ordinarie:</span>
+        <span class="font-semibold text-slate-800">36h</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <i data-lucide="trending-up" style="width:14px;height:14px;color:#f59e0b;"></i>
+        <span class="text-slate-500">Straordinario:</span>
+        <span class="font-semibold text-amber-600">2h</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <i data-lucide="sun" style="width:14px;height:14px;color:#22c55e;"></i>
+        <span class="text-slate-500">Riposi:</span>
+        <span class="font-semibold text-slate-800">2</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 15 — Dettaglio turno (dipendente)
+     ============================================================ -->
+<div id="screen-15" class="screen hidden flex flex-col min-h-full items-center justify-center p-8">
+  <div class="card p-6 w-full max-w-sm">
+    <div class="flex items-center gap-2 mb-4">
+      <button class="text-slate-400 hover:text-slate-600" onclick="showScreen('screen-14')">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+      </button>
+      <h2 class="text-sm font-semibold text-slate-900">Dettaglio turno</h2>
+    </div>
+    <div class="turn-mattina rounded-xl p-5 mb-4 text-center">
+      <div class="text-lg font-bold text-blue-800">Mattina</div>
+      <div class="text-2xl font-bold text-blue-700 mt-1">06:00 – 14:00</div>
+      <div class="text-sm text-blue-500 mt-0.5">Lunedì 8 luglio 2026</div>
+      <div class="text-xs text-blue-400 mt-2">Durata: 8h · Pausa 30 min inclusa</div>
+    </div>
+    <div class="space-y-2 text-xs text-slate-600 mb-4">
+      <div class="flex items-center gap-2"><i data-lucide="building-2" style="width:12px;height:12px;color:#94a3b8;"></i> Reparto Medicina — Piano 3</div>
+      <div class="flex items-center gap-2"><i data-lucide="user" style="width:12px;height:12px;color:#94a3b8;"></i> Mario Rossi</div>
+      <div class="flex items-center gap-2"><i data-lucide="file-text" style="width:12px;height:12px;color:#94a3b8;"></i> Note: nessuna</div>
+    </div>
+    <hr class="border-slate-100 mb-4">
+    <div class="text-xs font-semibold text-slate-500 mb-2">Azioni disponibili</div>
+    <div class="flex flex-col gap-2">
+      <button class="btn-secondary text-xs justify-center" onclick="showScreen('screen-19')">
+        <i data-lucide="pencil" style="width:13px;height:13px;"></i> Richiedi modifica
+      </button>
+      <button class="btn-secondary text-xs justify-center" onclick="showScreen('screen-19')">
+        <i data-lucide="arrow-left-right" style="width:13px;height:13px;"></i> Proponi scambio
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 16 — Profilo personale (dipendente)
+     ============================================================ -->
+<div id="screen-16" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="user-circle" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Profilo Personale</h1>
+  </div>
+  <div class="p-6 max-w-lg">
+    <!-- Dati personali (modificabili) -->
+    <div class="card p-5 mb-4">
+      <h3 class="text-sm font-semibold text-slate-900 mb-4">Dati personali</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Telefono</label>
+          <input class="input-base text-sm" value="+39 340 1234567">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Email di contatto</label>
+          <input class="input-base text-sm" value="mario.rossi@email.com">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Preferenza di contatto</label>
+          <div class="flex gap-4 mt-1">
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="pref" checked class="accent-blue-500"> Email</label>
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="pref" class="accent-blue-500"> SMS</label>
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="pref" class="accent-blue-500"> Nessuna</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dati contrattuali (sola lettura) -->
+    <div class="card p-5 mb-4 bg-slate-50">
+      <div class="flex items-center gap-2 mb-4">
+        <h3 class="text-sm font-semibold text-slate-700">Dati contrattuali</h3>
+        <i data-lucide="lock" style="width:13px;height:13px;color:#94a3b8;" title="Sola lettura"></i>
+        <span class="text-xs text-slate-400">(sola lettura)</span>
+      </div>
+      <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+        <div><dt class="text-slate-400 mb-0.5">Qualifica</dt><dd class="font-medium text-slate-600">Infermiere</dd></div>
+        <div><dt class="text-slate-400 mb-0.5">Ore contrattuali</dt><dd class="font-medium text-slate-600">36h/sett</dd></div>
+        <div><dt class="text-slate-400 mb-0.5">Tipo contratto</dt><dd class="font-medium text-slate-600">Tempo indeterminato</dd></div>
+        <div><dt class="text-slate-400 mb-0.5">Ruolo</dt><dd class="font-medium text-slate-600">Dipendente</dd></div>
+        <div><dt class="text-slate-400 mb-0.5">Stato</dt><dd><span class="badge badge-green">Attivo</span></dd></div>
+        <div><dt class="text-slate-400 mb-0.5">Data assunzione</dt><dd class="font-medium text-slate-600">01/03/2020</dd></div>
+      </dl>
+    </div>
+
+    <!-- Cambia password (collassabile) -->
+    <div class="card p-5 mb-4">
+      <button class="flex items-center justify-between w-full" onclick="togglePanel('pwd-section')">
+        <span class="text-sm font-semibold text-slate-900">Cambia password</span>
+        <i data-lucide="chevron-down" style="width:15px;height:15px;color:#94a3b8;" id="pwd-chevron"></i>
+      </button>
+      <div id="pwd-section" class="hidden mt-4 space-y-3">
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Password attuale</label><input type="password" class="input-base text-sm" placeholder="••••••••"></div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Nuova password</label><input type="password" class="input-base text-sm" placeholder="Min. 8 caratteri"></div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Conferma nuova password</label><input type="password" class="input-base text-sm" placeholder="Ripeti la nuova password"></div>
+        <button class="btn-secondary text-xs">Aggiorna password</button>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button class="btn-primary text-xs">
+        <i data-lucide="save" style="width:13px;height:13px;"></i> Salva modifiche
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 17 — Disponibilità e preferenze
+     ============================================================ -->
+<div id="screen-17" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="sliders-horizontal" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Disponibilità e Preferenze</h1>
+    <div class="ml-auto">
+      <button class="btn-primary text-xs" onclick="togglePanel('modal-disp')">
+        <i data-lucide="plus" style="width:13px;height:13px;"></i> Aggiungi disponibilità
+      </button>
+    </div>
+  </div>
+  <div class="p-6 max-w-2xl relative">
+    <div class="mb-4">
+      <p class="text-xs text-slate-500 mb-3">Le tue preferenze e disponibilità aiutano l'amministratore nella pianificazione dei turni. Non sono vincolanti.</p>
+      <!-- Chips -->
+      <div class="flex flex-wrap gap-2">
+        <div class="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-medium px-3 py-1.5 rounded-full">
+          <i data-lucide="check-circle" style="width:11px;height:11px;"></i>
+          Disponibile Lun–Ven mattina
+          <button class="ml-1 text-green-400 hover:text-green-600"><i data-lucide="x" style="width:10px;height:10px;"></i></button>
+        </div>
+        <div class="flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-3 py-1.5 rounded-full">
+          <i data-lucide="x-circle" style="width:11px;height:11px;"></i>
+          Non disponibile Sab–Dom
+          <button class="ml-1 text-red-400 hover:text-red-600"><i data-lucide="x" style="width:10px;height:10px;"></i></button>
+        </div>
+        <div class="flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full">
+          <i data-lucide="star" style="width:11px;height:11px;"></i>
+          Preferenza Mattina
+          <button class="ml-1 text-blue-400 hover:text-blue-600"><i data-lucide="x" style="width:10px;height:10px;"></i></button>
+        </div>
+        <div class="flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-3 py-1.5 rounded-full">
+          <i data-lucide="x-circle" style="width:11px;height:11px;"></i>
+          Non disponibile 1–15 ago (ferie programmate)
+          <button class="ml-1 text-red-400 hover:text-red-600"><i data-lucide="x" style="width:10px;height:10px;"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal per aggiunta (mostrato staticamente) -->
+    <div id="modal-disp" class="hidden card p-5 mt-4 border-blue-200" style="border-color:#bfdbfe;background:#f8fbff;">
+      <h4 class="text-sm font-semibold text-slate-900 mb-4">Aggiungi disponibilità / preferenza</h4>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-2">Tipo</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 text-xs"><input type="radio" name="tipo-disp" class="accent-green-500"> Disponibile</label>
+            <label class="flex items-center gap-2 text-xs"><input type="radio" name="tipo-disp" checked class="accent-red-500"> Non disponibile</label>
+            <label class="flex items-center gap-2 text-xs"><input type="radio" name="tipo-disp" class="accent-blue-500"> Preferenza</label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-2">Ambito</label>
+          <div class="flex gap-4 mb-2">
+            <label class="flex items-center gap-2 text-xs"><input type="radio" name="ambito" checked class="accent-blue-500"> Ricorrente</label>
+            <label class="flex items-center gap-2 text-xs"><input type="radio" name="ambito" class="accent-blue-500"> Date specifiche</label>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs text-slate-500 self-center">Giorni:</span>
+            <label class="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded cursor-pointer"><input type="checkbox" class="accent-blue-500"> L</label>
+            <label class="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded cursor-pointer"><input type="checkbox" class="accent-blue-500"> M</label>
+            <label class="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded cursor-pointer"><input type="checkbox" class="accent-blue-500"> M</label>
+            <label class="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded cursor-pointer"><input type="checkbox" class="accent-blue-500"> G</label>
+            <label class="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded cursor-pointer"><input type="checkbox" class="accent-blue-500"> V</label>
+            <label class="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded cursor-pointer"><input type="checkbox" checked class="accent-blue-500"> S</label>
+            <label class="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded cursor-pointer"><input type="checkbox" checked class="accent-blue-500"> D</label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Fascia oraria</label>
+          <select class="input-base text-xs"><option>Tutta la giornata</option><option selected>Mattina</option><option>Pomeriggio</option><option>Notte</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Note (opzionale)</label>
+          <input class="input-base text-xs" placeholder="Es. cure di famiglia…">
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button class="btn-secondary text-xs" onclick="togglePanel('modal-disp')">Annulla</button>
+          <button class="btn-primary text-xs" onclick="togglePanel('modal-disp')">Salva</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 18 — Le mie richieste
+     ============================================================ -->
+<div id="screen-18" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="send" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Le mie richieste</h1>
+    <div class="ml-auto">
+      <button class="btn-primary text-xs" onclick="showScreen('screen-19')">
+        <i data-lucide="plus" style="width:13px;height:13px;"></i> Nuova richiesta
+      </button>
+    </div>
+  </div>
+  <!-- Tabs -->
+  <div class="flex border-b border-slate-200 bg-white px-6">
+    <button class="tab-btn active" id="tab-mie" onclick="switchTab2('mie')">Le mie richieste</button>
+    <button class="tab-btn" id="tab-swap" onclick="switchTab2('swap')">Proposte scambio ricevute <span class="ml-1 badge badge-blue text-[10px]">2</span></button>
+  </div>
+
+  <div id="tabcontent2-mie" class="p-6">
+    <div class="space-y-2 max-w-2xl">
+      <div class="card p-3 flex items-center gap-3 hover:bg-slate-50">
+        <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="umbrella" style="width:14px;height:14px;color:#f59e0b;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-800">Richiesta ferie</div>
+          <div class="text-xs text-slate-400">20–27 luglio 2026 · Inviata il 13/07</div>
+        </div>
+        <span class="badge badge-amber">In attesa</span>
+        <button class="btn-danger text-xs py-1">Annulla</button>
+      </div>
+      <div class="card p-3 flex items-center gap-3 hover:bg-slate-50" onclick="showScreen('screen-20')">
+        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="arrow-left-right" style="width:14px;height:14px;color:#3b82f6;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-800">Proposta di scambio</div>
+          <div class="text-xs text-slate-400">Lun 08 ↔ Mar 09 · Inviata il 10/07</div>
+        </div>
+        <span class="badge badge-blue">In attesa collega</span>
+      </div>
+      <div class="card p-3 flex items-center gap-3 hover:bg-slate-50">
+        <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="file-plus" style="width:14px;height:14px;color:#22c55e;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-800">Richiesta turno extra</div>
+          <div class="text-xs text-slate-400">Sab 05 luglio · Inviata il 01/07</div>
+        </div>
+        <span class="badge badge-green">Approvata</span>
+      </div>
+      <div class="card p-3 flex items-center gap-3 hover:bg-slate-50">
+        <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="pencil" style="width:14px;height:14px;color:#64748b;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-800">Modifica turno</div>
+          <div class="text-xs text-slate-400">Gio 02 luglio · Inviata il 28/06</div>
+        </div>
+        <span class="badge badge-red">Rifiutata</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: proposte scambio ricevute -->
+  <div id="tabcontent2-swap" class="p-6 hidden">
+    <div class="space-y-3 max-w-2xl">
+      <div class="card p-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-700">LB</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Luca Bianchi</div>
+            <div class="text-xs text-slate-400">ha proposto uno scambio · 2 giorni fa</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="turn-mattina rounded-lg p-2 text-xs">
+            <div class="font-bold text-blue-800">Suo turno da cedere</div>
+            <div class="text-blue-600">Mattina — Gio 11 lug 06–14</div>
+          </div>
+          <div class="turn-pomeriggio rounded-lg p-2 text-xs">
+            <div class="font-bold text-green-800">Tuo turno da cedere</div>
+            <div class="text-green-600">Pomeriggio — Ven 12 lug 14–22</div>
+          </div>
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button class="btn-danger text-xs">Rifiuta</button>
+          <button class="btn-success text-xs" onclick="showScreen('screen-20')">Accetta scambio</button>
+        </div>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-xs font-bold text-purple-700">SN</div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900">Sara Neri</div>
+            <div class="text-xs text-slate-400">ha proposto uno scambio · 1 giorno fa</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="turn-notte rounded-lg p-2 text-xs">
+            <div class="font-bold" style="color:#6d28d9;">Suo turno da cedere</div>
+            <div style="color:#7c3aed;">Notte — Sab 13 lug 22–06</div>
+          </div>
+          <div class="turn-riposo rounded-lg p-2 text-xs">
+            <div class="font-medium text-slate-600">Tuo turno da cedere</div>
+            <div class="text-slate-500">Riposo — Dom 14 lug</div>
+          </div>
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button class="btn-danger text-xs">Rifiuta</button>
+          <button class="btn-success text-xs">Accetta scambio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 19 — Nuova richiesta
+     ============================================================ -->
+<div id="screen-19" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="plus-circle" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Nuova richiesta</h1>
+  </div>
+  <div class="p-6">
+    <!-- Step indicator (dynamic) -->
+    <div class="flex items-center gap-0 mb-6 max-w-xs" id="s19-indicator">
+      <div class="step-dot step-active">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot step-pending">2</div>
+    </div>
+
+    <!-- Step 1: Selezione tipo -->
+    <div id="s19-step1">
+      <p class="text-sm font-medium text-slate-700 mb-4">Seleziona il tipo di richiesta</p>
+      <div class="grid grid-cols-4 gap-3 max-w-2xl">
+        <div class="card p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors" onclick="selectRequestType('assenza')">
+          <i data-lucide="umbrella" style="width:24px;height:24px;color:#2563eb;margin:0 auto 8px;"></i>
+          <div class="text-xs font-semibold text-slate-700">Assenza</div>
+          <div class="text-[11px] text-slate-400 mt-1">Ferie, malattia, permesso</div>
+        </div>
+        <div class="card p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors" onclick="selectRequestType('scambio')">
+          <i data-lucide="arrow-left-right" style="width:24px;height:24px;color:#2563eb;margin:0 auto 8px;"></i>
+          <div class="text-xs font-semibold text-slate-700">Scambio turno</div>
+          <div class="text-[11px] text-slate-400 mt-1">Con un collega</div>
+        </div>
+        <div class="card p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors" onclick="selectRequestType('nuovo')">
+          <i data-lucide="file-plus" style="width:24px;height:24px;color:#2563eb;margin:0 auto 8px;"></i>
+          <div class="text-xs font-semibold text-slate-700">Nuovo turno</div>
+          <div class="text-[11px] text-slate-400 mt-1">Copertura disponibilità</div>
+        </div>
+        <div class="card p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors" onclick="selectRequestType('modifica')">
+          <i data-lucide="pencil" style="width:24px;height:24px;color:#2563eb;margin:0 auto 8px;"></i>
+          <div class="text-xs font-semibold text-slate-700">Modifica turno</div>
+          <div class="text-[11px] text-slate-400 mt-1">Cambia orario/tipo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 form (hidden until type selected) -->
+    <div id="s19-step2" class="hidden">
+      <p class="text-xs text-slate-400 mb-3">Tipo selezionato: <span id="s19-tipo-label" class="font-semibold text-blue-700">Assenza</span>
+        <button class="ml-2 text-blue-500 hover:underline text-xs" onclick="selectRequestType(null)">← Cambia</button>
+      </p>
+    </div>
+
+    <!-- Step 2 form -->
+    <div id="s19-form" class="hidden card p-5 max-w-lg">
+      <h3 class="text-sm font-semibold text-slate-900 mb-4">Dettagli assenza</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-2">Tipo assenza</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="tipo-ass2" checked class="accent-blue-500"> Ferie</label>
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="tipo-ass2" class="accent-blue-500"> Malattia</label>
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="tipo-ass2" class="accent-blue-500"> Permesso</label>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-medium text-slate-600 mb-1">Data inizio</label><input type="date" value="2026-07-20" class="input-base text-sm"></div>
+          <div><label class="block text-xs font-medium text-slate-600 mb-1">Data fine</label><input type="date" value="2026-07-27" class="input-base text-sm"></div>
+        </div>
+        <div><label class="block text-xs font-medium text-slate-600 mb-1">Note</label><textarea class="input-base resize-none h-16 text-sm" placeholder="Motivazione o note aggiuntive…"></textarea></div>
+        <!-- Preavviso minimo -->
+        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
+          <i data-lucide="check-circle" style="width:14px;height:14px;color:#22c55e;flex-shrink:0;"></i>
+          <span class="text-xs text-green-700">Preavviso minimo rispettato (richiesta con 7+ giorni di anticipo)</span>
+        </div>
+      </div>
+      <div class="flex gap-2 justify-end mt-5">
+        <button class="btn-secondary text-xs" onclick="selectRequestType(null)">← Indietro</button>
+        <button class="btn-primary text-xs" onclick="showScreen('screen-20')">
+          <i data-lucide="send" style="width:13px;height:13px;"></i> Invia richiesta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 20 — Dettaglio richiesta (dipendente)
+     ============================================================ -->
+<div id="screen-20" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <button class="mr-2 text-slate-400 hover:text-slate-600" onclick="showScreen('screen-18')">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+    </button>
+    <i data-lucide="file-text" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Dettaglio richiesta</h1>
+  </div>
+  <div class="p-6 max-w-lg">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">Proposta scambio turni</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Inviata il 10 luglio 2026 · ID #RQ-0287</p>
+      </div>
+      <span class="badge badge-blue">In attesa collega</span>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card p-5 mb-4">
+      <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Stato avanzamento</h3>
+      <div class="space-y-0">
+        <div class="tl-item">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div class="tl-dot" style="background:#22c55e;"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div class="pb-4">
+            <div class="text-xs font-semibold text-slate-800">Richiesta inviata</div>
+            <div class="text-xs text-slate-400">10 luglio 2026 · 14:32</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div class="tl-dot" style="background:#3b82f6;"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div class="pb-4">
+            <div class="text-xs font-semibold text-blue-700">In attesa del collega</div>
+            <div class="text-xs text-slate-400">Luca Bianchi deve accettare o rifiutare</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div class="tl-dot" style="background:#e2e8f0;"></div>
+            <div class="tl-line" style="min-height:0;"></div>
+          </div>
+          <div class="pb-2">
+            <div class="text-xs text-slate-400">In attesa approvazione admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Turni coinvolti -->
+    <div class="card p-4 mb-4">
+      <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Turni coinvolti</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <div class="text-[10px] text-slate-400 mb-1">Il tuo turno da cedere</div>
+          <div class="turn-mattina rounded-lg p-2 text-xs">
+            <div class="font-bold text-blue-800">Mattina</div>
+            <div class="text-blue-600">Lun 08 lug · 06–14</div>
+          </div>
+        </div>
+        <div>
+          <div class="text-[10px] text-slate-400 mb-1">Turno di Luca Bianchi</div>
+          <div class="turn-notte rounded-lg p-2 text-xs">
+            <div class="font-bold" style="color:#6d28d9;">Notte</div>
+            <div style="color:#7c3aed;">Mar 09 lug · 22–06</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-danger text-xs w-full justify-center" onclick="showScreen('screen-18')">
+      <i data-lucide="x" style="width:13px;height:13px;"></i> Annulla richiesta
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 21 — Centro notifiche
+     ============================================================ -->
+<div id="screen-21" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="bell" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Centro Notifiche</h1>
+    <span class="ml-2 bg-red-500 text-white text-[11px] rounded-full px-2 py-0.5 font-semibold">3 nuove</span>
+    <div class="ml-auto">
+      <button class="text-xs text-blue-500 hover:underline">Segna tutte come lette</button>
+    </div>
+  </div>
+  <div class="p-6 max-w-xl">
+    <div class="card overflow-hidden divide-y divide-slate-100">
+      <!-- Unread 1 -->
+      <div class="flex items-start gap-3 p-4 bg-blue-50 hover:bg-blue-100 cursor-pointer" onclick="showScreen('screen-13')">
+        <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="umbrella" style="width:14px;height:14px;color:#f59e0b;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="text-xs font-semibold text-slate-900">Nuova richiesta ferie</span>
+            <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" title="Non letta"></span>
+          </div>
+          <div class="text-xs text-slate-600">Anna Verdi ha richiesto ferie dal 20 al 27 luglio.</div>
+          <div class="text-[11px] text-slate-400 mt-1">2 min fa</div>
+        </div>
+        <button class="text-xs text-blue-500 hover:underline flex-shrink-0">Vedi →</button>
+      </div>
+      <!-- Unread 2 -->
+      <div class="flex items-start gap-3 p-4 bg-blue-50 hover:bg-blue-100 cursor-pointer" onclick="showScreen('screen-7')">
+        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="arrow-left-right" style="width:14px;height:14px;color:#3b82f6;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="text-xs font-semibold text-slate-900">Proposta di scambio</span>
+            <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+          </div>
+          <div class="text-xs text-slate-600">Luca Bianchi ha proposto uno scambio con Mario Rossi.</div>
+          <div class="text-[11px] text-slate-400 mt-1">18 min fa</div>
+        </div>
+        <button class="text-xs text-blue-500 hover:underline flex-shrink-0">Vedi →</button>
+      </div>
+      <!-- Unread 3 -->
+      <div class="flex items-start gap-3 p-4 bg-blue-50 hover:bg-blue-100 cursor-pointer" onclick="showScreen('screen-9')">
+        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;color:#ef4444;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="text-xs font-semibold text-slate-900">Copertura insufficiente</span>
+            <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+          </div>
+          <div class="text-xs text-slate-600">Mattina Mer 10 luglio — copertura infermieri sotto la soglia minima (2/3).</div>
+          <div class="text-[11px] text-slate-400 mt-1">1 h fa</div>
+        </div>
+        <button class="text-xs text-blue-500 hover:underline flex-shrink-0">Vedi →</button>
+      </div>
+      <!-- Read -->
+      <div class="flex items-start gap-3 p-4 hover:bg-slate-50 cursor-pointer">
+        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="check-circle" style="width:14px;height:14px;color:#22c55e;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-semibold text-slate-900 mb-0.5">Richiesta approvata</div>
+          <div class="text-xs text-slate-500">La tua richiesta turno extra (Sab 05 lug) è stata approvata.</div>
+          <div class="text-[11px] text-slate-400 mt-1">2 giorni fa</div>
+        </div>
+      </div>
+      <div class="flex items-start gap-3 p-4 hover:bg-slate-50 cursor-pointer">
+        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="info" style="width:14px;height:14px;color:#64748b;"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-semibold text-slate-900 mb-0.5">Aggiornamento turni</div>
+          <div class="text-xs text-slate-500">Il ciclo turni per agosto 2026 è stato pubblicato.</div>
+          <div class="text-[11px] text-slate-400 mt-1">3 giorni fa</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 22 — Stati globali
+     ============================================================ -->
+<div id="screen-22" class="screen hidden flex flex-col min-h-full">
+  <div class="app-topbar">
+    <i data-lucide="layers" style="width:16px;height:16px;color:#64748b;margin-right:6px;"></i>
+    <h1 class="page-title" style="border:none;padding:0;">Stati Globali</h1>
+  </div>
+  <div class="p-6 space-y-8">
+
+    <!-- (a) Skeleton loader -->
+    <div>
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs text-slate-600">a</span>
+        Skeleton loader — matrice in caricamento
+      </h3>
+      <div class="card p-4">
+        <!-- Fake header row -->
+        <div class="flex gap-2 mb-3">
+          <div class="skeleton h-4 w-32"></div>
+          <div class="skeleton h-4 flex-1"></div>
+          <div class="skeleton h-4 flex-1"></div>
+          <div class="skeleton h-4 flex-1"></div>
+          <div class="skeleton h-4 flex-1"></div>
+          <div class="skeleton h-4 flex-1"></div>
+          <div class="skeleton h-4 flex-1"></div>
+          <div class="skeleton h-4 flex-1"></div>
+        </div>
+        <!-- Fake rows -->
+        <div class="space-y-2">
+          <div class="flex gap-2">
+            <div class="skeleton h-12 w-32 flex-shrink-0"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+          </div>
+          <div class="flex gap-2">
+            <div class="skeleton h-12 w-32 flex-shrink-0"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+            <div class="skeleton h-12 flex-1"></div>
+          </div>
+          <div class="flex gap-2">
+            <div class="skeleton h-12 w-32 flex-shrink-0"></div>
+            <div class="skeleton h-12 flex-1 opacity-70"></div>
+            <div class="skeleton h-12 flex-1 opacity-70"></div>
+            <div class="skeleton h-12 flex-1 opacity-70"></div>
+            <div class="skeleton h-12 flex-1 opacity-70"></div>
+            <div class="skeleton h-12 flex-1 opacity-70"></div>
+            <div class="skeleton h-12 flex-1 opacity-70"></div>
+            <div class="skeleton h-12 flex-1 opacity-70"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- (b) Empty state -->
+    <div>
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs text-slate-600">b</span>
+        Empty state — nessun turno pianificato
+      </h3>
+      <div class="card p-10 flex flex-col items-center justify-center text-center max-w-md">
+        <!-- Minimal SVG illustration -->
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-4">
+          <rect x="10" y="14" width="60" height="56" rx="6" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
+          <rect x="10" y="14" width="60" height="16" rx="6" fill="#e2e8f0"/>
+          <rect x="10" y="26" width="60" height="4" fill="#e2e8f0"/>
+          <line x1="28" y1="8" x2="28" y2="20" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="52" y1="8" x2="52" y2="20" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="40" cy="54" r="10" fill="#e2e8f0"/>
+          <line x1="40" y1="48" x2="40" y2="54" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+          <line x1="40" y1="54" x2="44" y2="58" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="text-sm font-semibold text-slate-700 mb-1">Nessun turno pianificato</div>
+        <div class="text-xs text-slate-400 mb-4">Non ci sono turni assegnati per questa settimana. Crea un nuovo ciclo o assegna turni manualmente.</div>
+        <button class="btn-primary text-xs" onclick="showScreen('screen-6')">
+          <i data-lucide="plus" style="width:13px;height:13px;"></i> Crea ciclo turni
+        </button>
+      </div>
+    </div>
+
+    <!-- (c) Error 500 -->
+    <div>
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs text-slate-600">c</span>
+        Errore 500 — errore lato server
+      </h3>
+      <div class="card p-10 flex flex-col items-center justify-center text-center max-w-md">
+        <div class="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-4">
+          <i data-lucide="server-crash" style="width:28px;height:28px;color:#ef4444;"></i>
+        </div>
+        <div class="text-sm font-semibold text-slate-700 mb-1">Si è verificato un errore</div>
+        <div class="text-xs text-slate-400 mb-1">Codice: 500 — Internal Server Error</div>
+        <div class="text-xs text-slate-400 mb-4">Il server non ha potuto elaborare la richiesta. Il team tecnico è stato notificato automaticamente.</div>
+        <div class="flex gap-2">
+          <button class="btn-secondary text-xs">
+            <i data-lucide="arrow-left" style="width:13px;height:13px;"></i> Torna indietro
+          </button>
+          <button class="btn-primary text-xs">
+            <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Riprova
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end screens container -->
+</div><!-- end app-layout -->
+
+<script>
+  // ── Navigation ──────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+      s.style.display = 'none';
+    });
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.style.display = 'flex';
+
+    // Sidebar + layout
+    const appLayout = document.getElementById('app-layout');
+    if (id === 'screen-1') {
+      appLayout.style.display = 'none';
+      target.style.minHeight = '100vh';
+    } else {
+      appLayout.style.display = 'flex';
+    }
+
+    // Nav active state
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const navEl = document.getElementById('nav-' + id);
+    if (navEl) navEl.classList.add('active');
+
+    // Re-init Lucide icons
+    lucide.createIcons();
+
+    // Scroll main area to top
+    const main = document.querySelector('#app-layout .overflow-y-auto');
+    if (main) main.scrollTop = 0;
+  }
+
+  // ── Tab switching (screen-9) ─────────────────────────────────
+  function switchTab(name) {
+    ['setup','monitor'].forEach(t => {
+      document.getElementById('tabcontent-' + t).classList.add('hidden');
+      document.getElementById('tab-' + t).classList.remove('active');
+    });
+    document.getElementById('tabcontent-' + name).classList.remove('hidden');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  // ── Tab switching (screen-18) ────────────────────────────────
+  function switchTab2(name) {
+    ['mie','swap'].forEach(t => {
+      document.getElementById('tabcontent2-' + t).classList.add('hidden');
+      document.getElementById('tab-' + t).classList.remove('active');
+    });
+    document.getElementById('tabcontent2-' + name).classList.remove('hidden');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  // ── Toggle side panel / modal ────────────────────────────────
+  function togglePanel(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('hidden');
+    lucide.createIcons();
+    // Special: password section chevron
+    if (id === 'pwd-section') {
+      const chev = document.getElementById('pwd-chevron');
+      if (chev) {
+        const isOpen = !el.classList.contains('hidden');
+        chev.setAttribute('data-lucide', isOpen ? 'chevron-up' : 'chevron-down');
+        lucide.createIcons();
+      }
+    }
+  }
+
+  // ── Wizard Screen-6 ─────────────────────────────────────────
+  function showWizardStep(n) {
+    ['s6-step1','s6-step2','s6-step3'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', i !== n - 1);
+    });
+    const ind = document.getElementById('s6-indicator');
+    if (ind) {
+      const d = (i, cur) => {
+        if (i < cur) return `<div class="step-dot step-done"><i data-lucide="check" style="width:12px;height:12px;"></i></div>`;
+        if (i === cur) return `<div class="step-dot step-active">${i}</div>`;
+        return `<div class="step-dot step-pending">${i}</div>`;
+      };
+      ind.innerHTML =
+        d(1,n) +
+        `<div class="step-line ${n > 1 ? 'done' : ''}"></div>` +
+        d(2,n) +
+        `<div class="step-line ${n > 2 ? 'done' : ''}"></div>` +
+        d(3,n);
+    }
+    const lbl = document.getElementById('s6-step-labels');
+    if (lbl) {
+      const c = ['text-slate-400','text-slate-400','text-slate-400'];
+      for (let i = 1; i < n; i++) c[i-1] = 'text-green-600';
+      c[n-1] = 'text-blue-600';
+      lbl.innerHTML =
+        `<span class="flex-1 text-center font-medium ${c[0]}">1. Tipo</span>` +
+        `<span class="flex-1 text-center font-medium ${c[1]}">2. Sequenza</span>` +
+        `<span class="flex-1 text-center font-medium ${c[2]}">3. Anteprima</span>`;
+    }
+    lucide.createIcons();
+  }
+
+  // ── Screen-13 request selection ──────────────────────────────
+  function selectRequest(n) {
+    for (let i = 1; i <= 4; i++) {
+      const item = document.getElementById('s13-item-' + i);
+      if (item) item.className = i === n
+        ? 'p-3 bg-blue-50 border-l-2 border-blue-500 cursor-pointer'
+        : 'p-3 hover:bg-slate-50 cursor-pointer';
+      const det = document.getElementById('s13-detail-' + i);
+      if (det) det.classList.toggle('hidden', i !== n);
+    }
+    lucide.createIcons();
+  }
+
+  // ── Screen-19 request type selection ─────────────────────────
+  function selectRequestType(type) {
+    const step1 = document.getElementById('s19-step1');
+    const step2 = document.getElementById('s19-step2');
+    const form  = document.getElementById('s19-form');
+    const ind   = document.getElementById('s19-indicator');
+    const lbl   = document.getElementById('s19-tipo-label');
+    const labels = { assenza: 'Assenza', scambio: 'Scambio turno', nuovo: 'Nuovo turno', modifica: 'Modifica turno' };
+    if (!type) {
+      if (step1) step1.classList.remove('hidden');
+      if (step2) step2.classList.add('hidden');
+      if (form)  form.classList.add('hidden');
+      if (ind) ind.innerHTML = '<div class="step-dot step-active">1</div><div class="step-line"></div><div class="step-dot step-pending">2</div>';
+    } else {
+      if (step1) step1.classList.add('hidden');
+      if (step2) step2.classList.remove('hidden');
+      if (form)  form.classList.remove('hidden');
+      if (lbl) lbl.textContent = labels[type] || type;
+      if (ind) ind.innerHTML = '<div class="step-dot step-done"><i data-lucide="check" style="width:12px;height:12px;"></i></div><div class="step-line done"></div><div class="step-dot step-active">2</div>';
+    }
+    lucide.createIcons();
+  }
+
+  // ── Init ─────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; });
+
+    // Keyboard accessibility for nav-items
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'button');
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+      });
+    });
+
+    showScreen('screen-2');
+  });
+
+  // Patch showScreen to handle aria-current + screen-specific resets
+  const _origShowScreen = showScreen;
+  showScreen = function(id) {
+    _origShowScreen(id);
+    // aria-current
+    document.querySelectorAll('.nav-item').forEach(el => el.removeAttribute('aria-current'));
+    const navEl = document.getElementById('nav-' + id);
+    if (navEl) navEl.setAttribute('aria-current', 'page');
+    // document title
+    if (navEl) document.title = 'Turnly — ' + navEl.textContent.trim().replace(/\s*\d+\s*$/, '').trim();
+    // screen-specific resets
+    if (id === 'screen-6') showWizardStep(1);
+    if (id === 'screen-13') selectRequest(1);
+    if (id === 'screen-19') selectRequestType(null);
+  };
+</script>
+</body>
+</html>
+

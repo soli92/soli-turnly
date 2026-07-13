@@ -1,0 +1,7 @@
+node_modules/
+.next/
+out/
+dist/
+*.min.js
+playwright-report/
+tests/e2e/.auth/
