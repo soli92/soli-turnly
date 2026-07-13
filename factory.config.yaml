@@ -55,15 +55,15 @@ scheduler:
     query: true
     plan: true
     design: true
-    publish: false
+    publish: false             # richiede kanban_publish.provider configurato
     sync: true
     review: true               # CQRL v2.12 — attivo
-    visual-oracle: false       # v2.17
-    a11y: false                # v2.18
-    ux-ui-review: false        # v2.18
-    functional-oracle: false   # v2.20
-    premortem: true            # v2.16
-    prototype: false           # v2.26 EP-035
+    visual-oracle: true        # v2.17 — ATTIVO
+    a11y: true                 # v2.18 — ATTIVO
+    ux-ui-review: true         # v2.18 — ATTIVO
+    functional-oracle: true    # v2.20 — ATTIVO
+    premortem: true            # v2.16 — ATTIVO
+    prototype: true            # v2.26 EP-035 — ATTIVO
 
 code_quality:
   enabled: true                # CQRL opt-in (v2.12) — ATTIVO
@@ -77,7 +77,7 @@ code_quality:
     idiomaticity: true
     design: true
     robustness: true
-    accessibility: false       # v2.18 NEW
+    accessibility: true        # v2.18 — ATTIVO
   router:
     strategy: severity-tiered
     max_diff_lines: 80
@@ -88,14 +88,14 @@ code_quality:
 
 compression:
   output:
-    enabled: false             # OCL opt-in (v2.14, R.C6 — default off)
+    enabled: true              # OCL opt-in (v2.14, R.C6) — ATTIVO
     provider: caveman
     policy_profile: conservative   # conservative | aggressive | custom
     drift_fallback: ambiguous_handoff_marker
     chain_depth_downgrade: true
     cross_factory: off
   context:
-    enabled: false             # CCL opt-in (v2.14, R.G6 — default off)
+    enabled: false             # CCL opt-in (v2.14, R.G6) — richiede graphify provider
     provider: none             # none | graphify-cloud | graphify-ollama
     update_strategy: incremental
     full_rebuild_cron: "0 0 * * 0"   # weekly
@@ -109,35 +109,35 @@ compression:
     targets: []
 
 fe_correctness:
-  enabled: false               # Visual Oracle master switch (v2.17)
+  enabled: true                # Visual Oracle master switch (v2.17) — ATTIVO
   max_iterations: 3
   viewports:
     - {name: mobile, width: 375}
     - {name: desktop, width: 1280}
   themes: [light, dark]
-  checks: []                   # opt-in: [visual-regression, axe-a11y, interaction-test]
-  state_matrix_inject: false
-  granularity_lint: false
+  checks: [visual-regression, axe-a11y, interaction-test]   # v2.17 — ATTIVI
+  state_matrix_inject: true
+  granularity_lint: true
   granularity: {max_estimate_hours: 8, max_states: 3}
-  dispatch_gate: false
-  functional_oracle:           # v2.20 EP-018
-    enabled: false
+  dispatch_gate: true
+  functional_oracle:           # v2.20 EP-018 — ATTIVO
+    enabled: true
     max_iterations: 3
     critic: advisory
     acceptance_spec_glob: "code_quality/acceptance/*.acceptance.yaml"
 
-a11y:                          # v2.18 EP-007
-  enabled: false
-  agent: false
+a11y:                          # v2.18 EP-007 — ATTIVO
+  enabled: true
+  agent: true
   standard: "wcag22aa"
   severity_threshold: critical
-  required_on_fe_done: false
+  required_on_fe_done: true
   fail_ci_on: critical
-  include_interactive: false
+  include_interactive: true
   fallback_non_web: snippet-inline
 
-ux_ui:                         # v2.18 EP-008
-  enabled: false
+ux_ui:                         # v2.18 EP-008 — ATTIVO
+  enabled: true
   max_iterations: 3
   rubric_strict: true
   design_system_path: ""
@@ -145,21 +145,21 @@ ux_ui:                         # v2.18 EP-008
     - {name: mobile,  width: 375}
     - {name: desktop, width: 1280}
   agents:
-    reviewer: false
-    designer: false
-  required_on_fe_done: false
+    reviewer: true
+    designer: true
+  required_on_fe_done: true
   delegate_a11y_to_ep007: true
 
-design_intelligence:           # v2.21 EP-019 — estende EP-008
-  enabled: false               # richiede ux_ui.enabled: true (fail-loud al boot, ADR-071)
-  art_director: false
+design_intelligence:           # v2.21 EP-019 — ATTIVO (richiede ux_ui.enabled: true)
+  enabled: true
+  art_director: true
   generator_tool: none         # none | plop | yeoman
-  critic_enabled: false
-  rubric_intention_economy: false
+  critic_enabled: true
+  rubric_intention_economy: true
 
-wiki_lint:                     # v2.23 EP-031 — Semantic Drift Detection
+wiki_lint:                     # v2.23 EP-031 — Semantic Drift Detection — ATTIVO
   semantic_check:
-    enabled: false             # L3 embedding coseno opt-in (default off)
+    enabled: true
     similarity_threshold: 0.75
     embedding_model: voyage-3  # voyage-3 | text-embedding-3-small
     cost_warn_usd: 1.0
@@ -171,7 +171,7 @@ analytics:
     enabled: true              # EP-009 Task Analytics measurement — attivo (supporta Token Ledger)
     agent: false
   estimation:
-    enabled: false             # EP-010 Task Analytics estimation
+    enabled: true              # EP-010 Task Analytics estimation — ATTIVO
     agent: false
   dogfooding:                  # v2.19 EP-013 — ATTIVO
     enabled: true
@@ -184,17 +184,17 @@ analytics:
     show_cache_savings: true
     auto_call_on_wave_close: false
     pricing_fallback: prefix-based
-  sprint_progress:             # v2.30 EP-043
-    enabled: false
+  sprint_progress:             # v2.30 EP-043 — ATTIVO
+    enabled: true
     velocity_rolling_days: 7
 
 release_governance:            # §22 — governance META, default false in factory derivate
   battle_test_gate:
     enabled: false
 
-# Prototype Generation Layer (v2.26, EP-035, PATTERN §27) — off
+# Prototype Generation Layer (v2.26, EP-035, PATTERN §27) — ATTIVO
 prototyping:
-  enabled: false               # master switch EP-035 (R.P3 default off)
+  enabled: true                # master switch EP-035
   backend: auto
   fallback_chain: [figma, penpot, react, html]
   degrade_policy: notify
@@ -219,9 +219,9 @@ prototyping:
       mcp_server: "penpot"
       instance_url: ""
 
-# Tavola Rotonda — modalita' multi-agente collaborativa (EP-039, PATTERN §28) — off
+# Tavola Rotonda — modalita' multi-agente collaborativa (EP-039, PATTERN §28) — ATTIVO
 tavola_rotonda:
-  enabled: false
+  enabled: true
   partecipanti: []
   critico:
     enabled: true
@@ -237,13 +237,15 @@ tavola_rotonda:
   topologia: lavagna
   sintesi_progressiva: true
 
-# Voice Channel Layer (EP-041, PATTERN §30) — off
+# Voice Channel Layer (EP-041/EP-044/EP-046, PATTERN §30) — ATTIVO
+# Richiede setup: /voice-install per provisioning (PID manager, STT, TTS)
 voice_channel:
-  enabled: false
+  enabled: true
 
-# Hybrid Wiki Search Layer (EP-042, PATTERN §31) — off
+# Hybrid Wiki Search Layer (EP-042, PATTERN §31) — ATTIVO
+# Richiede: pip install sentence-transformers lancedb (primo run crea l'indice)
 wiki_search:
-  enabled: false
+  enabled: true
   embedding_provider: local
   embedding_model: paraphrase-multilingual-MiniLM-L12-v2
   embedding_dim: 384
@@ -256,10 +258,10 @@ wiki_search:
   top_k: 5
   exclude_types: [meta]
 
-# Temporal Generative Time Model (EP-043) — off
+# Temporal Generative Time Model (EP-043) — ATTIVO
 temporal:
   estimate_protocol:
-    enabled: false
+    enabled: true
     budget_ms:
       S: 900000
       M: 3600000
@@ -270,19 +272,19 @@ temporal:
       escalate_time_ratio: 5.0
       escalate_confidence_min: 0.1
 
-# Capability Formativa (EP-045) — off
+# Capability Formativa (EP-045) — ATTIVO
 capability_formativa:
-  enabled: false
-  wiki_search_integration: false
+  enabled: true
+  wiki_search_integration: true   # richiede wiki_search.enabled: true
 
-# VCS Branch Awareness Layer (v2.25, EP-034) — off
+# VCS Branch Awareness Layer (v2.25, EP-034) — ATTIVO
 vcs:
   mode: monorepo
   base_branch: main
   branch_strategy: feature-branches
   branch_awareness:
-    enabled: false
-    preflight: false
-    dispatch_gate: off
-    auto_align: off
-    drift_check: false
+    enabled: true
+    preflight: true
+    dispatch_gate: warn          # off | warn | block
+    auto_align: propose          # off | propose (mai checkout silente, R.B8)
+    drift_check: true
