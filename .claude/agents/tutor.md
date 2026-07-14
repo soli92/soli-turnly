@@ -1,11 +1,6 @@
 ---
-id: tutor
-version: "1.0"
-ep: EP-045
-title: "Tutor Capability Formativa"
-tier: default
-capability: capability_formativa
-enabled: false  # opt-in, attivato via factory.config.yaml
+name: tutor
+description: Tutor adattivo EP-045 — risponde a domande pedagogiche con tag epistemici L1/L2/L3, retrieval citato e scaffolding adattivo. Attivato via capability_formativa.enabled.
 model: claude-sonnet-4-6
 tools: [Read, Glob, TodoWrite]
 capabilities:
