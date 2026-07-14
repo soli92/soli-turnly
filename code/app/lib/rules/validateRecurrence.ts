@@ -39,11 +39,9 @@ export function validateRecurrence(
   userId: string,
   candidates: Date[],
   absences: Absence[],
-  holidays: string[] = [],
+  holidays: string[] = []
 ): RecurrenceResult {
-  const approvedAbsences = absences.filter(
-    (a) => a.userId === userId && a.status === 'approved',
-  );
+  const approvedAbsences = absences.filter((a) => a.userId === userId && a.status === 'approved');
   const holidaySet = new Set(holidays);
 
   const valid: RecurrenceCandidate[] = [];
@@ -63,7 +61,7 @@ export function validateRecurrence(
       isWithinInterval(startOfDay(date), {
         start: startOfDay(parseISO(a.startDate)),
         end: startOfDay(parseISO(a.endDate)),
-      }),
+      })
     );
 
     if (conflict) {

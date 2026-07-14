@@ -30,34 +30,16 @@ export interface ApprovalContext {
  */
 export function validateRequestApproval(
   shiftToApprove: ShiftInput,
-  context: ApprovalContext,
+  context: ApprovalContext
 ): ValidationResult {
   let result = emptyResult();
 
-  result = mergeResults(
-    result,
-    validateNoOverlap(shiftToApprove, context.existingShifts),
-  );
-  result = mergeResults(
-    result,
-    validateMinRest(shiftToApprove, context.existingShifts),
-  );
-  result = mergeResults(
-    result,
-    validateWeeklyRest(shiftToApprove, context.existingShifts),
-  );
-  result = mergeResults(
-    result,
-    validateConsecutiveDays(shiftToApprove, context.existingShifts),
-  );
-  result = mergeResults(
-    result,
-    validateWeeklyHours(shiftToApprove, context.existingShifts),
-  );
-  result = mergeResults(
-    result,
-    validateNoShiftOnAbsence(shiftToApprove, context.absences),
-  );
+  result = mergeResults(result, validateNoOverlap(shiftToApprove, context.existingShifts));
+  result = mergeResults(result, validateMinRest(shiftToApprove, context.existingShifts));
+  result = mergeResults(result, validateWeeklyRest(shiftToApprove, context.existingShifts));
+  result = mergeResults(result, validateConsecutiveDays(shiftToApprove, context.existingShifts));
+  result = mergeResults(result, validateWeeklyHours(shiftToApprove, context.existingShifts));
+  result = mergeResults(result, validateNoShiftOnAbsence(shiftToApprove, context.absences));
 
   return result;
 }

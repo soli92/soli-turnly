@@ -17,11 +17,7 @@
  */
 
 import { AlertTriangle, XCircle } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { RuleViolation } from '@/types';
 
 interface ViolationBadgeProps {
@@ -44,7 +40,7 @@ export function ViolationBadge({ violations, severity }: ViolationBadgeProps) {
           type="button"
           className={[
             'inline-flex items-center justify-center rounded-full p-0.5',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+            'focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none',
             isBlocking
               ? 'text-red-600 focus-visible:ring-red-500'
               : 'text-amber-500 focus-visible:ring-amber-400',

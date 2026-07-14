@@ -1,15 +1,18 @@
 /**
  * TSK-002 — Seed script per development
+ * TSK-013 — Aggiunta seed per availability, coverage_requirements
  *
  * Popola il database con dati di riferimento per lo sviluppo locale.
  *
  * Dati inseriti:
- *   - 2 qualifiche (Medico, Infermiere)
+ *   - 3 qualifiche (Medico, Infermiere, OSS)
  *   - 3 tipologie turno (Mattino, Pomeriggio, Notte)
  *   - 1 admin (admin@turnly.dev / Admin123!)
  *   - 5 dipendenti (mario.rossi, lucia.verdi, giovanni.bianchi, anna.ferrari, carlo.esposito)
  *   - 3 tipi assenza (Ferie, Malattia, Permesso)
  *   - Turni per la settimana corrente (lun-ven, 1 turno per dipendente per giorno)
+ *   - 3 regole di copertura (3 Infermieri notte, 2 OSS pomeriggio, 1 Medico mattina)
+ *   - 2 finestre di indisponibilità per mario.rossi (test RB-15)
  *
  * Esecuzione:
  *   npx tsx code/app/db/seed.ts
@@ -19,8 +22,16 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { hashSync } from 'bcryptjs';
-import { addDays, startOfWeek, format, setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
-import { toZonedTime, fromZonedTime } from '@date-fns/tz';
+import {
+  addDays,
+  startOfWeek,
+  format,
+  setHours,
+  setMinutes,
+  setSeconds,
+  setMilliseconds,
+} from 'date-fns';
+import { TZDate } from '@date-fns/tz';
 
 import {
   qualifications,
@@ -28,6 +39,8 @@ import {
   shiftTypes,
   absenceTypes,
   shifts,
+  availability,
+  coverageRequirements,
 } from './schema';
 
 // ---------------------------------------------------------------------------
@@ -50,15 +63,15 @@ const TIMEZONE = 'Europe/Rome';
 
 /**
  * Builds a timezone-aware Date from a local date and HH:mm in Europe/Rome.
- * Handles DST automatically via @date-fns/tz.
+ * Handles DST automatically via @date-fns/tz TZDate (modern API).
+ *
+ * TZDate extends Date: date-fns helpers (setHours etc.) operate in the
+ * declared timezone, so the returned value already carries the correct UTC
+ * timestamp — no fromZonedTime needed.
  */
 function localDt(date: Date, hour: number, minute = 0): Date {
-  const localDate = toZonedTime(date, TIMEZONE);
-  const withTime = setMilliseconds(
-    setSeconds(setMinutes(setHours(localDate, hour), minute), 0),
-    0,
-  );
-  return fromZonedTime(withTime, TIMEZONE);
+  const tzDate = new TZDate(date, TIMEZONE);
+  return setMilliseconds(setSeconds(setMinutes(setHours(tzDate, hour), minute), 0), 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +85,8 @@ async function seed() {
   // Qualifiche
   // -------------------------------------------------------------------------
 
-  const [medico, infermiere] = await db
+  // noUncheckedIndexedAccess: usiamo ! perché db.insert.returning() garantisce N righe
+  const qualRows = await db
     .insert(qualifications)
     .values([
       {
@@ -85,10 +99,18 @@ async function seed() {
         color: '#10B981',
         description: 'Infermiere professionale',
       },
+      {
+        name: 'OSS',
+        color: '#F97316',
+        description: 'Operatore Socio Sanitario',
+      },
     ])
     .returning();
+  const medico = qualRows[0]!;
+  const infermiere = qualRows[1]!;
+  const oss = qualRows[2]!;
 
-  console.log(`  qualifications: ${[medico, infermiere].map((q) => q.name).join(', ')}`);
+  console.log(`  qualifications: ${[medico, infermiere, oss].map((q) => q.name).join(', ')}`);
 
   // -------------------------------------------------------------------------
   // Tipologie turno
@@ -97,7 +119,7 @@ async function seed() {
   // Notte    23:00 – 07:00 (+1)
   // -------------------------------------------------------------------------
 
-  const [turnoMattino, turnoPomeriggio, turnoNotte] = await db
+  const shiftTypeRows = await db
     .insert(shiftTypes)
     .values([
       {
@@ -129,9 +151,12 @@ async function seed() {
       },
     ])
     .returning();
+  const turnoMattino = shiftTypeRows[0]!;
+  const turnoPomeriggio = shiftTypeRows[1]!;
+  const turnoNotte = shiftTypeRows[2]!;
 
   console.log(
-    `  shift_types: ${[turnoMattino, turnoPomeriggio, turnoNotte].map((s) => s.name).join(', ')}`,
+    `  shift_types: ${[turnoMattino, turnoPomeriggio, turnoNotte].map((s) => s.name).join(', ')}`
   );
 
   // -------------------------------------------------------------------------
@@ -140,7 +165,7 @@ async function seed() {
 
   const adminPasswordHash = hashSync('Admin123!', 12);
 
-  const [adminUser] = await db
+  const adminUserRows = await db
     .insert(users)
     .values([
       {
@@ -155,6 +180,7 @@ async function seed() {
       },
     ])
     .returning();
+  const adminUser = adminUserRows[0]!;
 
   console.log(`  admin: ${adminUser.email}`);
 
@@ -210,7 +236,7 @@ async function seed() {
         passwordHash: employeePasswordHash,
         role: 'employee' as const,
         active: true,
-      })),
+      }))
     )
     .returning();
 
@@ -224,9 +250,11 @@ async function seed() {
     { name: 'Ferie', code: 'FER', paidLeave: true, requiresApproval: true },
     { name: 'Malattia', code: 'MAL', paidLeave: true, requiresApproval: false },
     { name: 'Permesso', code: 'PER', paidLeave: true, requiresApproval: true },
+    { name: 'Maternità/Paternità', code: 'MAT', paidLeave: true, requiresApproval: true },
+    { name: 'Altro', code: 'ALT', paidLeave: false, requiresApproval: true },
   ]);
 
-  console.log('  absence_types: Ferie, Malattia, Permesso');
+  console.log('  absence_types: Ferie, Malattia, Permesso, Maternità/Paternità, Altro');
 
   // -------------------------------------------------------------------------
   // Turni per la settimana corrente (lun-ven)
@@ -258,7 +286,8 @@ async function seed() {
     const dateStr = format(currentDay, 'yyyy-MM-dd');
 
     employeeUsers.forEach((employee, idx) => {
-      const shiftType = shiftTypesCycle[idx % 3];
+      // noUncheckedIndexedAccess: shiftTypesCycle ha sempre 3 elementi (idx % 3 è safe)
+      const shiftType = shiftTypesCycle[idx % 3]!;
 
       let startDt: Date;
       let endDt: Date;
@@ -291,6 +320,73 @@ async function seed() {
   await db.insert(shifts).values(shiftsToInsert);
 
   console.log(`  shifts: ${shiftsToInsert.length} turni (lun-ven settimana corrente)`);
+
+  // -------------------------------------------------------------------------
+  // TSK-013 — Regole di copertura
+  // 3 Infermieri notte, 2 OSS pomeriggio, 1 Medico mattina
+  // -------------------------------------------------------------------------
+
+  await db.insert(coverageRequirements).values([
+    {
+      qualificationId: infermiere.id,
+      shiftTypeId: turnoNotte.id,
+      dayOfWeek: null, // tutti i giorni
+      minimumCount: 3,
+      notes: 'Minimo 3 Infermieri per turno notte',
+    },
+    {
+      qualificationId: oss.id,
+      shiftTypeId: turnoPomeriggio.id,
+      dayOfWeek: null, // tutti i giorni
+      minimumCount: 2,
+      notes: 'Minimo 2 OSS per turno pomeriggio',
+    },
+    {
+      qualificationId: medico.id,
+      shiftTypeId: turnoMattino.id,
+      dayOfWeek: null, // tutti i giorni
+      minimumCount: 1,
+      notes: 'Minimo 1 Medico per turno mattina',
+    },
+  ]);
+
+  console.log(
+    '  coverage_requirements: 3 regole (Infermieri notte, OSS pomeriggio, Medico mattina)'
+  );
+
+  // -------------------------------------------------------------------------
+  // TSK-013 — Finestre di indisponibilità per mario.rossi (test RB-15)
+  // 2 availability entries: 1 date_range + 1 recurring
+  // -------------------------------------------------------------------------
+
+  // noUncheckedIndexedAccess: il seed inserisce sempre almeno 1 dipendente
+  const marioRossi = employeeUsers[0]!; // mario.rossi@turnly.dev
+
+  await db.insert(availability).values([
+    {
+      userId: marioRossi.id,
+      type: 'unavailable' as const,
+      scope: 'date_range' as const,
+      definition: {
+        startDate: '2026-08-01',
+        endDate: '2026-08-15',
+      },
+      notes: 'Ferie estive agosto 2026 — test RB-15 (date_range unavailability)',
+    },
+    {
+      userId: marioRossi.id,
+      type: 'unavailable' as const,
+      scope: 'recurring' as const,
+      definition: {
+        dayOfWeek: 6, // sabato
+        startTime: '00:00',
+        endTime: '23:59',
+      },
+      notes: 'Indisponibile ogni sabato — test RB-15 (recurring unavailability)',
+    },
+  ]);
+
+  console.log('  availability: 2 finestre di indisponibilità per mario.rossi (test RB-15)');
 
   // -------------------------------------------------------------------------
   // Done

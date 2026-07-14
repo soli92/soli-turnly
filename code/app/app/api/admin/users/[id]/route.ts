@@ -26,6 +26,8 @@ const userSelectFields = {
   lastName: users.lastName,
   qualificationId: users.qualificationId,
   contractHours: users.contractHours,
+  phone: users.phone,
+  contractType: users.contractType,
   active: users.active,
   createdAt: users.createdAt,
 };
@@ -42,11 +44,7 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<Respo
 
   const { id } = await params;
 
-  const [user] = await db
-    .select(userSelectFields)
-    .from(users)
-    .where(eq(users.id, id))
-    .limit(1);
+  const [user] = await db.select(userSelectFields).from(users).where(eq(users.id, id)).limit(1);
 
   if (!user) return ApiResponse.notFound('Utente non trovato');
 
@@ -65,11 +63,7 @@ export async function PATCH(req: Request, { params }: RouteParams): Promise<Resp
 
   const { id } = await params;
 
-  const [existing] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, id))
-    .limit(1);
+  const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
   if (!existing) return ApiResponse.notFound('Utente non trovato');
 
@@ -117,11 +111,7 @@ export async function DELETE(req: Request, { params }: RouteParams): Promise<Res
 
   const { id } = await params;
 
-  const [existing] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, id))
-    .limit(1);
+  const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
   if (!existing) return ApiResponse.notFound('Utente non trovato');
 

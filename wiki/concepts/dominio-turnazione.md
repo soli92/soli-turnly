@@ -106,3 +106,23 @@ Il self-service dipendente opera su due livelli distinti:
 2. **Richieste con approvazione** — azioni che toccano la pianificazione (assenza, scambio, nuovo turno, modifica turno). Il dipendente non scrive direttamente sulla pianificazione pubblicata.
 
 [^src: raw/turnly-documento-funzionale.md §Scopo del documento]
+
+---
+
+## Storie collegate
+
+| EP | Titolo | Storie |
+|---|---|---|
+| [EP-001](../management/kanban/EP-001-autenticazione-ruoli/EP-001.md) | Autenticazione e Gestione Ruoli | US-001, US-002 |
+| [EP-002](../management/kanban/EP-002-anagrafica-dipendenti-qualifiche/EP-002.md) | Anagrafica Dipendenti e Qualifiche | US-003, US-004 |
+| [EP-003](../management/kanban/EP-003-tipologie-turno/EP-003.md) | Tipologie di Turno | US-005 |
+| [EP-004](../management/kanban/EP-004-matrice-turni-admin/EP-004.md) | Matrice Turni Admin | US-006, US-007 |
+| [EP-005](../management/kanban/EP-005-ricorrenze-cicli-rotativi/EP-005.md) | Ricorrenze e Cicli Rotativi | US-008, US-009 |
+| [EP-006](../management/kanban/EP-006-scambio-turni-admin/EP-006.md) | Scambio Turni Admin | US-010 |
+| [EP-007](../management/kanban/EP-007-gestione-assenze-admin/EP-007.md) | Gestione Assenze Admin | US-011 |
+| [EP-008](../management/kanban/EP-008-fabbisogni-copertura/EP-008.md) | Fabbisogni di Copertura | US-012 |
+| [EP-009](../management/kanban/EP-009-straordinari-report-ore/EP-009.md) | Straordinari e Report Ore | US-013 |
+| [EP-010](../management/kanban/EP-010-dashboard-admin/EP-010.md) | Dashboard Admin | US-014 |
+| [EP-011](../management/kanban/EP-011-calendario-profilo-dipendente/EP-011.md) | Calendario e Profilo Dipendente | US-015, US-016, US-017 |
+| [EP-012](../management/kanban/EP-012-richieste-dipendente-workflow/EP-012.md) | Richieste Dipendente e Workflow | US-018, US-019, US-020 |
+| [EP-013](../management/kanban/EP-013-notifiche-in-app/EP-013.md) | Notifiche In-App | US-021 |

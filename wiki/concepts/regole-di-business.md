@@ -102,3 +102,19 @@ correttamente, `attraversaMezzanotte = true`, la data di fine è il giorno succe
 cambio ora legale (DST) può produrre durate reali di 7h o 9h per turni che attraversano
 l'ora di cambio — calcolate sul fuso configurato (`Europe/Rome`). Vedi test T-DOM-01 e
 T-DOM-08.
+
+---
+
+## Storie collegate
+
+| EP | Storie | Regole coperte |
+|---|---|---|
+| [EP-003](../management/kanban/EP-003-tipologie-turno/EP-003.md) | US-005 | RB-12 (mezzanotte e DST) |
+| [EP-004](../management/kanban/EP-004-matrice-turni-admin/EP-004.md) | US-007 | RB-01, RB-02, RB-04, RB-05, RB-08, RB-09, RB-15 |
+| [EP-005](../management/kanban/EP-005-ricorrenze-cicli-rotativi/EP-005.md) | US-008, US-009 | RB-11 |
+| [EP-006](../management/kanban/EP-006-scambio-turni-admin/EP-006.md) | US-010 | RB-10 |
+| [EP-007](../management/kanban/EP-007-gestione-assenze-admin/EP-007.md) | US-011 | RB-08 |
+| [EP-008](../management/kanban/EP-008-fabbisogni-copertura/EP-008.md) | US-012 | RB-07 |
+| [EP-009](../management/kanban/EP-009-straordinari-report-ore/EP-009.md) | US-013 | RB-06 |
+| [EP-011](../management/kanban/EP-011-calendario-profilo-dipendente/EP-011.md) | US-016, US-017 | RB-13, RB-15 |
+| [EP-012](../management/kanban/EP-012-richieste-dipendente-workflow/EP-012.md) | US-018, US-019, US-020 | RB-14, RB-16 |

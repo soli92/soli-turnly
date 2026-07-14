@@ -1,8 +1,12 @@
 /**
  * RB-02 — Riposo minimo 11 ore tra turni consecutivi dello stesso utente.
- * Severity: WARNING (configurabile a BLOCKING via env MIN_REST_STRICT=true)
+ * Severity: WARNING di default; BLOCKING se options.strict = true.
  *
  * Pure function — nessun side effect, nessuna chiamata DB.
+ * La configurazione viene iniettata tramite il parametro opzionale `options`
+ * anziché letta da process.env, garantendo la purezza anche su client.
+ * Il chiamante BE (route handler) può passare:
+ *   { strict: process.env['MIN_REST_STRICT'] === 'true' }
  */
 import { differenceInHours } from 'date-fns';
 import type { ExistingShift, RuleViolation, ShiftInput, ValidationResult } from './types';
@@ -10,27 +14,21 @@ import { emptyResult } from './types';
 
 const MIN_REST_HOURS = 11;
 
-function isStrict(): boolean {
-  return (
-    typeof process !== 'undefined' &&
-    process.env['MIN_REST_STRICT'] === 'true'
-  );
-}
-
 /**
  * Verifica il riposo minimo di 11 ore tra il turno in input e i turni
  * adiacenti (precedente e successivo) dello stesso utente.
+ *
+ * @param options.strict - true → severity BLOCKING; false (default) → WARNING
  */
 export function validateMinRest(
   input: ShiftInput,
   existing: ExistingShift[],
+  options?: { strict?: boolean | undefined }
 ): ValidationResult {
   const result = emptyResult();
-  const severity = isStrict() ? 'blocking' : 'warning';
+  const severity = (options?.strict ?? false) ? 'blocking' : 'warning';
 
-  const sameUserShifts = existing.filter(
-    (s) => s.userId === input.userId && s.id !== input.id,
-  );
+  const sameUserShifts = existing.filter((s) => s.userId === input.userId && s.id !== input.id);
 
   // Turno precedente: il più recente che termina prima dell'inizio del nuovo
   const before = sameUserShifts

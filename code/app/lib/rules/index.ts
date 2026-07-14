@@ -65,6 +65,14 @@ export interface ValidateShiftContext {
   contractHours?: number;
   /** Punto di riferimento temporale (iniettabile per i test). */
   now?: Date;
+  /**
+   * Config iniettata dal chiamante BE — non leggere process.env nelle pure functions.
+   * Esempio da route handler:
+   *   minRestStrict: process.env['MIN_REST_STRICT'] === 'true'
+   *   pastShiftStrict: process.env['PAST_SHIFT_STRICT'] !== 'false'  // true di default
+   */
+  minRestStrict?: boolean;
+  pastShiftStrict?: boolean;
 }
 
 /**
@@ -74,24 +82,21 @@ export interface ValidateShiftContext {
  * creazione/modifica turno (T-INT-01).
  *
  * @param input   - Dati del turno da creare o modificare.
- * @param context - Turni esistenti e assenze correnti dell'utente.
+ * @param context - Turni esistenti, assenze e config opzionale del chiamante.
  */
-export function validateShift(
-  input: ShiftInput,
-  context: ValidateShiftContext,
-): ValidationResult {
-  const { existingShifts, absences, now } = context;
+export function validateShift(input: ShiftInput, context: ValidateShiftContext): ValidationResult {
+  const { existingShifts, absences, now, minRestStrict, pastShiftStrict } = context;
   let result = emptyResult();
 
-  result = mergeResults(result, validateNoOverlap(input, existingShifts));         // RB-01
-  result = mergeResults(result, validateMinRest(input, existingShifts));           // RB-02
-  result = mergeResults(result, validateWeeklyRest(input, existingShifts));        // RB-03
-  result = mergeResults(result, validateConsecutiveDays(input, existingShifts));   // RB-04
-  result = mergeResults(result, validateWeeklyHours(input, existingShifts));       // RB-05
+  result = mergeResults(result, validateNoOverlap(input, existingShifts)); // RB-01
+  result = mergeResults(result, validateMinRest(input, existingShifts, { strict: minRestStrict })); // RB-02
+  result = mergeResults(result, validateWeeklyRest(input, existingShifts)); // RB-03
+  result = mergeResults(result, validateConsecutiveDays(input, existingShifts)); // RB-04
+  result = mergeResults(result, validateWeeklyHours(input, existingShifts)); // RB-05
   // RB-06 (overtime) è informativo, non incluso nel gate di default
   // RB-07 (coverage) richiede requirements — non incluso nel gate generico
-  result = mergeResults(result, validateNoShiftOnAbsence(input, absences));        // RB-08
-  result = mergeResults(result, validatePastShift(input, now));                    // RB-09
+  result = mergeResults(result, validateNoShiftOnAbsence(input, absences)); // RB-08
+  result = mergeResults(result, validatePastShift(input, now, { strict: pastShiftStrict })); // RB-09
 
   return result;
 }

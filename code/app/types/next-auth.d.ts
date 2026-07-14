@@ -2,7 +2,11 @@
  * types/next-auth.d.ts — Type augmentation per Auth.js v5 (NextAuth).
  *
  * Estende le interfacce User, Session e JWT con i campi custom
- * definiti in auth.ts (role, firstName, lastName).
+ * definiti in auth.config.ts (id, role, firstName, lastName).
+ *
+ * Fix H2: aggiunto `id: string` a Session.user.
+ * DefaultSession['user'] non include `id`; il campo viene propagato
+ * esplicitamente nel session callback (token.sub → session.user.id).
  *
  * Ref: https://authjs.dev/getting-started/typescript
  */
@@ -23,10 +27,12 @@ declare module 'next-auth' {
 
   /**
    * Estende l'interfaccia Session con i campi propagati dal JWT.
-   * Disponibile via `session.user.role`, `session.user.firstName`, ecc.
+   * Disponibile via `session.user.id`, `session.user.role`, ecc.
    */
   interface Session {
     user: {
+      /** Identificativo univoco dell'utente (= token.sub propagato dal session callback). */
+      id: string;
       role: string;
       firstName: string;
       lastName: string;
@@ -37,6 +43,8 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   /**
    * Estende il JWT token con i campi custom serializzati nel cookie.
+   * Nota: token.sub (standard JWT claim) contiene user.id — non è
+   * necessario ridefinirlo qui.
    */
   interface JWT {
     role?: string;

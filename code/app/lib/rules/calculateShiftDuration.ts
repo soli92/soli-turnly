@@ -20,10 +20,7 @@ import { differenceInMinutes } from 'date-fns';
  * @param endDt   - Data/ora di fine (oggetto Date o stringa ISO).
  * @returns Durata in minuti (sempre positiva se endDt > startDt).
  */
-export function calculateShiftDurationMinutes(
-  startDt: Date,
-  endDt: Date,
-): number {
+export function calculateShiftDurationMinutes(startDt: Date, endDt: Date): number {
   return differenceInMinutes(endDt, startDt);
 }
 
@@ -34,9 +31,6 @@ export function calculateShiftDurationMinutes(
  * @param endDt   - Data/ora di fine.
  * @returns Durata in ore (es. 7.5 per 7h 30min).
  */
-export function calculateShiftDurationHours(
-  startDt: Date,
-  endDt: Date,
-): number {
+export function calculateShiftDurationHours(startDt: Date, endDt: Date): number {
   return differenceInMinutes(endDt, startDt) / 60;
 }

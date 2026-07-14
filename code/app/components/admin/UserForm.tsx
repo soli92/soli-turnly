@@ -21,7 +21,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import {
@@ -89,7 +89,9 @@ export function UserForm(props: UserFormProps) {
 
   // Schema e default values in base alla modalità
   const createForm = useForm<AdminUserCreateInput>({
-    resolver: zodResolver(adminUserCreateSchema),
+    // Cast necessario: zodResolver usa il tipo input dello schema (con opzionali per .default());
+    // AdminUserCreateInput è il tipo output (con campi required). exactOptionalPropertyTypes.
+    resolver: zodResolver(adminUserCreateSchema) as Resolver<AdminUserCreateInput>,
     defaultValues: {
       email: '',
       password: '',
@@ -125,20 +127,21 @@ export function UserForm(props: UserFormProps) {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as {
+        const body = (await res.json().catch(() => ({}))) as {
           error?: string;
           issues?: Array<{ path: string[]; message: string }>;
         };
         const err = new Error(body.error ?? `Errore ${res.status}`) as Error & {
           issues?: Array<{ path: string[]; message: string }>;
         };
-        err.issues = body.issues;
+        // NOTE: assegnazione condizionale per exactOptionalPropertyTypes (err.issues è optional).
+        if (body.issues) err.issues = body.issues;
         throw err;
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.adminList() });
+      void queryClient.invalidateQueries({ queryKey: userKeys.adminList() });
       form.reset();
       onSuccess?.();
     },
@@ -265,10 +268,7 @@ export function UserForm(props: UserFormProps) {
             <FormItem>
               <FormLabel>Ruolo</FormLabel>
               <FormControl>
-                <Select
-                  value={field.value ?? 'employee'}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value ?? 'employee'} onValueChange={field.onChange}>
                   <SelectTrigger aria-label="Seleziona ruolo">
                     <SelectValue placeholder="Seleziona ruolo" />
                   </SelectTrigger>
@@ -294,14 +294,14 @@ export function UserForm(props: UserFormProps) {
                 <FormLabel>Qualifica</FormLabel>
                 <FormControl>
                   <Select
-                    value={field.value ?? ''}
-                    onValueChange={(v) => field.onChange(v || null)}
+                    value={field.value || '__none__'}
+                    onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}
                   >
                     <SelectTrigger aria-label="Seleziona qualifica">
                       <SelectValue placeholder="Nessuna qualifica" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nessuna qualifica</SelectItem>
+                      <SelectItem value="__none__">Nessuna qualifica</SelectItem>
                       {qualifications.map((q) => (
                         <SelectItem key={q.id} value={q.id}>
                           {q.name}
@@ -335,9 +335,7 @@ export function UserForm(props: UserFormProps) {
                   onChange={(e) => field.onChange(Number(e.target.value))}
                 />
               </FormControl>
-              <FormDescription>
-                Da 1 a 60 ore settimanali (RB-13)
-              </FormDescription>
+              <FormDescription>Da 1 a 60 ore settimanali (RB-13)</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -345,13 +343,13 @@ export function UserForm(props: UserFormProps) {
 
         {/* Errore generico */}
         {mutation.isError && (
-          <p role="alert" className="text-xs text-destructive">
+          <p role="alert" className="text-destructive text-xs">
             {mutation.error?.message ?? 'Si è verificato un errore'}
           </p>
         )}
 
         {/* Azioni */}
-        <div className="flex gap-3 justify-end pt-2">
+        <div className="flex justify-end gap-3 pt-2">
           {onCancel && (
             <Button
               type="button"

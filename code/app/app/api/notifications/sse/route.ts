@@ -38,9 +38,7 @@ export async function GET(): Promise<Response> {
 
       // Evento di connessione iniziale (informativo, non trigger di azioni FE)
       try {
-        controller.enqueue(
-          `event: connected\ndata: ${JSON.stringify({ userId })}\n\n`,
-        );
+        controller.enqueue(`event: connected\ndata: ${JSON.stringify({ userId })}\n\n`);
       } catch {
         // ignore
       }

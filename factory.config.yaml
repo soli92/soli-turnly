@@ -44,7 +44,7 @@ models:
 
 scheduler:
   enabled: true
-  max_parallel: 4
+  max_parallel: 8
   parallel_gate_threshold: 3
   code_path_conflict: strict
   empty_code_path_policy: serial

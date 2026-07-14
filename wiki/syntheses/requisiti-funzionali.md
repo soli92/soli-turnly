@@ -221,3 +221,24 @@ Per ciascuna schermata: ruolo, scopo, componenti chiave, stati da rappresentare.
 | 22 | Stati globali / errori | Tutti | Coerenza UX | Empty state, schermata errore, skeleton di caricamento | — |
 
 [^src: raw/turnly-documento-funzionale.md §10 Inventario schermate]
+
+---
+
+## Storie collegate
+
+| RF | EP | Storie |
+|---|---|---|
+| RF-A | [EP-001](../management/kanban/EP-001-autenticazione-ruoli/EP-001.md) | US-001, US-002 |
+| RF-B | [EP-002](../management/kanban/EP-002-anagrafica-dipendenti-qualifiche/EP-002.md) | US-003, US-004 |
+| RF-C | [EP-003](../management/kanban/EP-003-tipologie-turno/EP-003.md) | US-005 |
+| RF-D | [EP-004](../management/kanban/EP-004-matrice-turni-admin/EP-004.md) | US-006, US-007 |
+| RF-E | [EP-005](../management/kanban/EP-005-ricorrenze-cicli-rotativi/EP-005.md) | US-008, US-009 |
+| RF-F | [EP-006](../management/kanban/EP-006-scambio-turni-admin/EP-006.md) | US-010 |
+| RF-G | [EP-007](../management/kanban/EP-007-gestione-assenze-admin/EP-007.md) | US-011 |
+| RF-H | [EP-008](../management/kanban/EP-008-fabbisogni-copertura/EP-008.md) | US-012 |
+| RF-I | [EP-009](../management/kanban/EP-009-straordinari-report-ore/EP-009.md) | US-013 |
+| RF-J | [EP-011](../management/kanban/EP-011-calendario-profilo-dipendente/EP-011.md) | US-015 |
+| RF-K | [EP-010](../management/kanban/EP-010-dashboard-admin/EP-010.md) | US-014 |
+| RF-L | [EP-011](../management/kanban/EP-011-calendario-profilo-dipendente/EP-011.md) | US-016, US-017 |
+| RF-M | [EP-012](../management/kanban/EP-012-richieste-dipendente-workflow/EP-012.md) | US-018, US-019, US-020 |
+| RF-N | [EP-013](../management/kanban/EP-013-notifiche-in-app/EP-013.md) | US-021 |

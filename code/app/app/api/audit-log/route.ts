@@ -40,10 +40,7 @@ export async function GET(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
   const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10));
-  const limit = Math.min(
-    500,
-    Math.max(1, parseInt(url.searchParams.get('limit') ?? '100', 10)),
-  );
+  const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '100', 10)));
   const offset = (page - 1) * limit;
 
   const entityType = url.searchParams.get('entityType') ?? undefined;
@@ -92,7 +89,7 @@ export async function GET(req: Request): Promise<Response> {
   // ------------------------------------------------------------------
   // Query: dati + count totale (per la paginazione)
   // ------------------------------------------------------------------
-  const [rows, [{ value: total }]] = await Promise.all([
+  const [rows, countResult] = await Promise.all([
     db
       .select()
       .from(auditLogs)
@@ -100,11 +97,11 @@ export async function GET(req: Request): Promise<Response> {
       .orderBy(desc(auditLogs.createdAt))
       .limit(limit)
       .offset(offset),
-    db
-      .select({ value: count() })
-      .from(auditLogs)
-      .where(whereClause),
+    db.select({ value: count() }).from(auditLogs).where(whereClause),
   ]);
+
+  // noUncheckedIndexedAccess: accesso esplicito con fallback 0
+  const total = countResult[0]?.value ?? 0;
 
   return ApiResponse.ok({
     data: rows,

@@ -31,7 +31,7 @@ export type MutationAction = 'update' | 'delete';
 export function validateRequestImmutability(
   requestId: string,
   currentStatus: string,
-  action: MutationAction,
+  action: MutationAction
 ): ValidationResult {
   const result = emptyResult();
 

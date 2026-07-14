@@ -44,6 +44,8 @@ export async function GET(_req: Request): Promise<Response> {
       lastName: users.lastName,
       qualificationId: users.qualificationId,
       contractHours: users.contractHours,
+      phone: users.phone,
+      contractType: users.contractType,
       active: users.active,
       createdAt: users.createdAt,
     })
@@ -75,9 +77,7 @@ export async function PATCH(req: Request): Promise<Response> {
   // Se il body contiene qualsiasi campo non consentito → 403
   if (body !== null && typeof body === 'object') {
     const bodyKeys = Object.keys(body as Record<string, unknown>);
-    const hasForbidden = FORBIDDEN_SELF_PATCH_FIELDS.some((f) =>
-      bodyKeys.includes(f),
-    );
+    const hasForbidden = FORBIDDEN_SELF_PATCH_FIELDS.some((f) => bodyKeys.includes(f));
     if (hasForbidden) return ApiResponse.forbidden();
   }
 
@@ -109,6 +109,8 @@ export async function PATCH(req: Request): Promise<Response> {
       lastName: users.lastName,
       qualificationId: users.qualificationId,
       contractHours: users.contractHours,
+      phone: users.phone,
+      contractType: users.contractType,
       active: users.active,
       createdAt: users.createdAt,
     });

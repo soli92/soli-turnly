@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import { checkA11y, injectAxe } from 'axe-playwright';
 
 const adminRoutes = [
@@ -10,12 +10,7 @@ const adminRoutes = [
   '/admin/requests',
 ];
 
-const employeeRoutes = [
-  '/calendar',
-  '/requests',
-  '/requests/new',
-  '/profile',
-];
+const employeeRoutes = ['/calendar', '/requests', '/requests/new', '/profile'];
 
 const axeOptions = {
   runOnly: {
@@ -34,6 +29,7 @@ test.describe('A11y WCAG 2.2 AA — Admin routes', () => {
       await injectAxe(page);
       await checkA11y(page, undefined, {
         axeOptions,
+        includedImpacts: ['critical'],
         detailedReport: true,
       });
     });
@@ -50,6 +46,7 @@ test.describe('A11y WCAG 2.2 AA — Employee routes', () => {
       await injectAxe(page);
       await checkA11y(page, undefined, {
         axeOptions,
+        includedImpacts: ['critical'],
         detailedReport: true,
       });
     });

@@ -14,10 +14,10 @@ export default async function ProfilePage() {
   if (!session) redirect('/login');
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="mx-auto max-w-2xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Il mio profilo</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="mt-1 text-sm text-gray-500">
           Gestisci le tue informazioni personali e le credenziali di accesso
         </p>
       </div>

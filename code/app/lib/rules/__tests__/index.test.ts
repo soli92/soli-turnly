@@ -10,7 +10,12 @@ describe('validateShift — composita RB-01..09', () => {
   };
 
   it('nessuna violazione con turno valido', () => {
-    const result = validateShift(baseShift, { existingShifts: [], absences: [] });
+    // now impostato prima del turno per escludere RB-09 (turno nel passato)
+    const result = validateShift(baseShift, {
+      existingShifts: [],
+      absences: [],
+      now: new Date('2025-06-01T00:00:00Z'),
+    });
     expect(result.valid).toBe(true);
     expect(result.blocking).toHaveLength(0);
   });
@@ -81,9 +86,11 @@ describe('validateShift — composita RB-01..09', () => {
       startDt: new Date('2025-06-02T06:00:00Z'),
       endDt: new Date('2025-06-02T10:00:00Z'),
     };
+    // now impostato prima del turno per escludere RB-09 (turno nel passato)
     const result = validateShift(baseShift, {
       existingShifts: [otherUserShift],
       absences: [],
+      now: new Date('2025-06-01T00:00:00Z'),
     });
     expect(result.valid).toBe(true);
   });

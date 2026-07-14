@@ -8,11 +8,7 @@
  * Pure function — nessun side effect, nessuna chiamata DB.
  */
 import { areIntervalsOverlapping } from 'date-fns';
-import type {
-  CoverageRequirement,
-  PlannedShift,
-  ValidationResult,
-} from './types';
+import type { CoverageRequirement, PlannedShift, ValidationResult } from './types';
 import { emptyResult } from './types';
 
 /**
@@ -26,7 +22,7 @@ import { emptyResult } from './types';
 export function validateCoverage(
   removedShift: PlannedShift,
   plannedShifts: PlannedShift[],
-  requirements: CoverageRequirement[],
+  requirements: CoverageRequirement[]
 ): ValidationResult {
   const result = emptyResult();
 
@@ -41,8 +37,8 @@ export function validateCoverage(
         areIntervalsOverlapping(
           { start: s.startDt, end: s.endDt },
           { start: req.slotStart, end: req.slotEnd },
-          { inclusive: false },
-        ),
+          { inclusive: false }
+        )
     );
 
     if (covering.length < req.minCount) {

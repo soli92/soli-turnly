@@ -80,7 +80,8 @@ export interface ShiftInput {
   startDt: Date;
   endDt: Date;
   /** Presente in caso di modifica: escludi questo ID dal controllo sovrapposizioni. */
-  id?: string;
+  // NOTE: esplicito | undefined per compatibilità con exactOptionalPropertyTypes.
+  id?: string | undefined;
 }
 
 export interface ExistingShift {

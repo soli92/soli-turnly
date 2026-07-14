@@ -34,7 +34,7 @@ function userCoveredDays(shifts: ExistingShift[]): Set<number> {
  */
 export function validateConsecutiveDays(
   input: ShiftInput,
-  existing: ExistingShift[],
+  existing: ExistingShift[]
 ): ValidationResult {
   const result = emptyResult();
 

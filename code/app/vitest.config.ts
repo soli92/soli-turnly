@@ -4,6 +4,8 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
+    include: ['src/**/*.{test,spec}.ts', 'lib/**/*.{test,spec}.ts'],
+    exclude: ['tests/e2e/**', 'tests/a11y/**', 'tests/visual/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
       include: ['lib/rules/**/*.ts', 'lib/zod/**/*.ts'],

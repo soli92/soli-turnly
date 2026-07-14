@@ -17,8 +17,8 @@ export function ProfilePageClient() {
   if (isLoading) {
     return (
       <div className="space-y-4" aria-busy="true">
-        <div className="h-8 w-48 rounded bg-gray-100 animate-pulse" />
-        <div className="h-32 rounded-lg border border-border bg-gray-50 animate-pulse" />
+        <div className="h-8 w-48 animate-pulse rounded bg-gray-100" />
+        <div className="border-border h-32 animate-pulse rounded-lg border bg-gray-50" />
       </div>
     );
   }
@@ -38,11 +38,8 @@ export function ProfilePageClient() {
     <div className="space-y-8">
       {/* Sezione dati personali */}
       <section aria-labelledby="profile-section-heading">
-        <div className="rounded-lg border border-border bg-white p-6">
-          <h2
-            id="profile-section-heading"
-            className="text-base font-semibold text-gray-900 mb-4"
-          >
+        <div className="border-border rounded-lg border bg-white p-6">
+          <h2 id="profile-section-heading" className="mb-4 text-base font-semibold text-gray-900">
             Dati personali
           </h2>
           <ProfileForm user={user} />
@@ -51,11 +48,8 @@ export function ProfilePageClient() {
 
       {/* Sezione sicurezza */}
       <section aria-labelledby="security-section-heading">
-        <div className="rounded-lg border border-border bg-white p-6">
-          <h2
-            id="security-section-heading"
-            className="text-base font-semibold text-gray-900 mb-4"
-          >
+        <div className="border-border rounded-lg border bg-white p-6">
+          <h2 id="security-section-heading" className="mb-4 text-base font-semibold text-gray-900">
             Sicurezza
           </h2>
           <PasswordForm />

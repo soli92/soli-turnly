@@ -22,7 +22,7 @@ function minutesToHoursFixed(minutes: number): string {
  */
 export function validateWeeklyHours(
   input: ShiftInput,
-  existing: ExistingShift[],
+  existing: ExistingShift[]
 ): ValidationResult {
   const result = emptyResult();
 
@@ -35,13 +35,13 @@ export function validateWeeklyHours(
       s.userId === input.userId &&
       s.id !== input.id &&
       s.startDt >= weekStart &&
-      s.startDt <= weekEnd,
+      s.startDt <= weekEnd
   );
 
   // Somma minuti esistenti + nuovo turno
   const existingMinutes = weekShifts.reduce(
     (acc, s) => acc + differenceInMinutes(s.endDt, s.startDt),
-    0,
+    0
   );
   const newMinutes = differenceInMinutes(input.endDt, input.startDt);
   const totalMinutes = existingMinutes + newMinutes;

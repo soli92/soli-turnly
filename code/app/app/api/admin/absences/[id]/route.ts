@@ -74,11 +74,7 @@ export async function PATCH(req: Request, { params }: RouteParams): Promise<Resp
       : {}),
   };
 
-  const [updated] = await db
-    .update(absences)
-    .set(setData)
-    .where(eq(absences.id, id))
-    .returning();
+  const [updated] = await db.update(absences).set(setData).where(eq(absences.id, id)).returning();
 
   await insertAuditLog({
     actorId: session.user.id as string,

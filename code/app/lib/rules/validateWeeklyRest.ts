@@ -32,10 +32,7 @@ function coveredDays(shifts: ExistingShift[]): Set<number> {
  * Verifica che non esistano 7 giorni consecutivi tutti occupati da turni,
  * includendo il nuovo turno nel computo.
  */
-export function validateWeeklyRest(
-  input: ShiftInput,
-  existing: ExistingShift[],
-): ValidationResult {
+export function validateWeeklyRest(input: ShiftInput, existing: ExistingShift[]): ValidationResult {
   const result = emptyResult();
 
   // Costruisce shift fittizio dall'input per unificarlo alla lista

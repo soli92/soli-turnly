@@ -23,7 +23,7 @@ const DEFAULT_CONTRACT_HOURS = 40;
 export function calculateOvertime(
   input: ShiftInput,
   existing: ExistingShift[],
-  contractHours: number = DEFAULT_CONTRACT_HOURS,
+  contractHours: number = DEFAULT_CONTRACT_HOURS
 ): ValidationResult {
   const result = emptyResult();
 
@@ -35,12 +35,12 @@ export function calculateOvertime(
       s.userId === input.userId &&
       s.id !== input.id &&
       s.startDt >= weekStart &&
-      s.startDt <= weekEnd,
+      s.startDt <= weekEnd
   );
 
   const existingMinutes = weekShifts.reduce(
     (acc, s) => acc + differenceInMinutes(s.endDt, s.startDt),
-    0,
+    0
   );
   const newMinutes = differenceInMinutes(input.endDt, input.startDt);
   const totalMinutes = existingMinutes + newMinutes;

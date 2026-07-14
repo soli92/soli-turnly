@@ -1,5 +1,5 @@
 /**
- * auth.ts — Auth.js v5 (NextAuth) configuration.
+ * auth.ts — Auth.js v5 (NextAuth) — Node.js runtime (non Edge).
  *
  * Strategia: JWT (stateless) con scadenza configurabile via SESSION_MAX_AGE.
  * Provider: Credentials (email/password) con bcrypt.
@@ -9,6 +9,12 @@
  *   password errata — il client NON distingue quale campo è sbagliato.
  * - RF-A CA2: il ruolo è propagato nel JWT e verificato dal middleware RBAC.
  * - RF-A CA3: sessione scaduta → token non valido → middleware redirect /login.
+ *
+ * Edge Compatibility:
+ * - La configurazione condivisa (session, callbacks, pages) è in auth.config.ts.
+ * - middleware.ts importa solo auth.config.ts (nessun DB/bcrypt nel bundle Edge).
+ * - Questo file viene importato esclusivamente da contesti Node.js
+ *   (Route Handler, Server Component, lib/auth).
  *
  * Note TSK-002: db.query.users richiede lo schema completo (tabella users).
  * I tipi TS verranno risolti al merge di TSK-002.
@@ -23,6 +29,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { authConfig } from '@/auth.config';
 
 // ----------------------------------------------------------------
 // Validazione input credenziali (schema Zod)
@@ -38,10 +45,10 @@ const loginSchema = z.object({
 // ----------------------------------------------------------------
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
-  session: {
-    strategy: 'jwt',
-    maxAge: parseInt(process.env['SESSION_MAX_AGE'] ?? '28800'), // default 8h
-  },
+  // Eredita session.strategy, callbacks (jwt+session con id), e pages
+  // da auth.config.ts.  I providers sono sovrascritti con il Credentials
+  // completo che usa DB e bcrypt (incompatibili con Edge).
+  ...authConfig,
 
   providers: [
     Credentials({
@@ -77,36 +84,4 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       },
     }),
   ],
-
-  callbacks: {
-    /**
-     * JWT callback — arricchisce il token con campi custom al primo login.
-     * I campi role/firstName/lastName sono propagati a ogni richiesta successiva.
-     */
-    jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
-      }
-      return token;
-    },
-
-    /**
-     * Session callback — espone i campi custom del JWT nella sessione client.
-     * Il type augmentation in types/next-auth.d.ts rende role/firstName/lastName
-     * disponibili in session.user senza typecast.
-     */
-    session({ session, token }) {
-      session.user.role = token.role as string;
-      session.user.firstName = token.firstName as string;
-      session.user.lastName = token.lastName as string;
-      return session;
-    },
-  },
-
-  pages: {
-    signIn: '/login',
-    error: '/login', // RF-A CA1: errori auth → redirect /login (no pagina errore separata)
-  },
 });

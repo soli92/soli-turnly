@@ -11,21 +11,14 @@ function makeInput(start: string, end: string): ShiftInput {
   return { userId: USER_A, startDt: new Date(start), endDt: new Date(end) };
 }
 
-function makeAbsence(
-  id: string,
-  startDate: string,
-  endDate: string,
-  status: string,
-): Absence {
+function makeAbsence(id: string, startDate: string, endDate: string, status: string): Absence {
   return { id, userId: USER_A, startDate, endDate, status };
 }
 
 describe('validateNoShiftOnAbsence (RB-08)', () => {
   describe('assenza approvata', () => {
     it('turno durante assenza approvata — BLOCKING', () => {
-      const absences = [
-        makeAbsence('abs1', '2025-06-10', '2025-06-14', 'approved'),
-      ];
+      const absences = [makeAbsence('abs1', '2025-06-10', '2025-06-14', 'approved')];
       // Turno nel mezzo dell'assenza
       const input = makeInput('2025-06-12T08:00:00Z', '2025-06-12T16:00:00Z');
 
@@ -38,9 +31,7 @@ describe('validateNoShiftOnAbsence (RB-08)', () => {
     });
 
     it('turno nel primo giorno di assenza — BLOCKING', () => {
-      const absences = [
-        makeAbsence('abs1', '2025-06-10', '2025-06-14', 'approved'),
-      ];
+      const absences = [makeAbsence('abs1', '2025-06-10', '2025-06-14', 'approved')];
       const input = makeInput('2025-06-10T08:00:00Z', '2025-06-10T16:00:00Z');
 
       const result = validateNoShiftOnAbsence(input, absences);
@@ -50,9 +41,7 @@ describe('validateNoShiftOnAbsence (RB-08)', () => {
     });
 
     it("turno nell'ultimo giorno di assenza — BLOCKING", () => {
-      const absences = [
-        makeAbsence('abs1', '2025-06-10', '2025-06-14', 'approved'),
-      ];
+      const absences = [makeAbsence('abs1', '2025-06-10', '2025-06-14', 'approved')];
       const input = makeInput('2025-06-14T08:00:00Z', '2025-06-14T16:00:00Z');
 
       const result = validateNoShiftOnAbsence(input, absences);
@@ -63,9 +52,7 @@ describe('validateNoShiftOnAbsence (RB-08)', () => {
 
   describe('assenza in stato pending', () => {
     it('turno durante assenza pending — nessuna violation', () => {
-      const absences = [
-        makeAbsence('abs1', '2025-06-10', '2025-06-14', 'pending'),
-      ];
+      const absences = [makeAbsence('abs1', '2025-06-10', '2025-06-14', 'pending')];
       const input = makeInput('2025-06-12T08:00:00Z', '2025-06-12T16:00:00Z');
 
       const result = validateNoShiftOnAbsence(input, absences);
@@ -77,9 +64,7 @@ describe('validateNoShiftOnAbsence (RB-08)', () => {
 
   describe('assenza rifiutata', () => {
     it('turno durante assenza rejected — nessuna violation', () => {
-      const absences = [
-        makeAbsence('abs1', '2025-06-10', '2025-06-14', 'rejected'),
-      ];
+      const absences = [makeAbsence('abs1', '2025-06-10', '2025-06-14', 'rejected')];
       const input = makeInput('2025-06-12T08:00:00Z', '2025-06-12T16:00:00Z');
 
       const result = validateNoShiftOnAbsence(input, absences);
@@ -100,7 +85,7 @@ describe('validateNoShiftOnAbsence (RB-08)', () => {
   });
 
   describe('utenti diversi', () => {
-    it("turno di utente B durante assenza approvata di utente A — nessun blocco", () => {
+    it('turno di utente B durante assenza approvata di utente A — nessun blocco', () => {
       const absences: Absence[] = [
         {
           id: 'abs1',

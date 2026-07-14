@@ -16,30 +16,27 @@ import { emptyResult } from './types';
  * @param existing  - Lista turni esistenti dell'utente (già filtrata per userId
  *                    oppure passata completa — la funzione filtra internamente).
  */
-export function validateNoOverlap(
-  input: ShiftInput,
-  existing: ExistingShift[],
-): ValidationResult {
+export function validateNoOverlap(input: ShiftInput, existing: ExistingShift[]): ValidationResult {
   const result = emptyResult();
 
-  const sameUserShifts = existing.filter(
-    (s) => s.userId === input.userId && s.id !== input.id,
-  );
+  const sameUserShifts = existing.filter((s) => s.userId === input.userId && s.id !== input.id);
 
   const overlapping = sameUserShifts.filter((s) =>
     areIntervalsOverlapping(
       { start: input.startDt, end: input.endDt },
       { start: s.startDt, end: s.endDt },
-      { inclusive: false },
-    ),
+      { inclusive: false }
+    )
   );
 
   if (overlapping.length > 0) {
+    // noUncheckedIndexedAccess: overlapping[0] è safe (verificato da overlapping.length > 0)
+    const first = overlapping[0]!;
     result.valid = false;
     result.blocking.push({
       ruleId: 'RB-01',
       severity: 'blocking',
-      message: `Sovrapposizione con turno ${overlapping[0].id} (${overlapping[0].startDt.toISOString()} – ${overlapping[0].endDt.toISOString()})`,
+      message: `Sovrapposizione con turno ${first.id} (${first.startDt.toISOString()} – ${first.endDt.toISOString()})`,
       affectedUserId: input.userId,
     });
   }

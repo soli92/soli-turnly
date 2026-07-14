@@ -21,10 +21,7 @@ export async function GET(_req: Request): Promise<Response> {
   const session = await auth();
   if (!session) return ApiResponse.unauthorized();
 
-  const rows = await db
-    .select()
-    .from(shiftTypes)
-    .where(eq(shiftTypes.active, true));
+  const rows = await db.select().from(shiftTypes).where(eq(shiftTypes.active, true));
 
   return ApiResponse.ok(rows);
 }
@@ -49,10 +46,7 @@ export async function POST(req: Request): Promise<Response> {
   const parsed = shiftTypeCreateSchema.safeParse(body);
   if (!parsed.success) return ApiResponse.badRequest(parsed.error.issues);
 
-  const [newShiftType] = await db
-    .insert(shiftTypes)
-    .values(parsed.data)
-    .returning();
+  const [newShiftType] = await db.insert(shiftTypes).values(parsed.data).returning();
 
   await insertAuditLog({
     actorId: session.user.id as string,

@@ -4,14 +4,14 @@ Checklist gate pre-merge per il progetto Turnly (TSK-012).
 
 ## Checklist
 
-| # | Check | Comando | Threshold / Atteso | Stato |
-|---|-------|---------|-------------------|-------|
-| 1 | TypeScript strict | `npm run type:check` | 0 errori, 0 `@ts-ignore` | - |
-| 2 | ESLint | `npx eslint .` | 0 errori (warning ammessi) | - |
-| 3 | Prettier format | `npm run format:check` | 0 file out-of-format | - |
-| 4 | Unit tests + coverage | `npm run test:coverage` | lines >= 80%, functions >= 80%, branches >= 75%, statements >= 80% | - |
-| 5 | E2E tests (Playwright) | `npm run test:e2e` | 0 test falliti | - |
-| 6 | A11y WCAG 2.2 AA | `npm run test:a11y` | 0 violazioni WCAG 2.2 AA | - |
+| #   | Check                  | Comando                 | Threshold / Atteso                                                 | Stato |
+| --- | ---------------------- | ----------------------- | ------------------------------------------------------------------ | ----- |
+| 1   | TypeScript strict      | `npm run type:check`    | 0 errori, 0 `@ts-ignore`                                           | -     |
+| 2   | ESLint                 | `npx eslint .`          | 0 errori (warning ammessi)                                         | -     |
+| 3   | Prettier format        | `npm run format:check`  | 0 file out-of-format                                               | -     |
+| 4   | Unit tests + coverage  | `npm run test:coverage` | lines >= 80%, functions >= 80%, branches >= 75%, statements >= 80% | -     |
+| 5   | E2E tests (Playwright) | `npm run test:e2e`      | 0 test falliti                                                     | -     |
+| 6   | A11y WCAG 2.2 AA       | `npm run test:a11y`     | 0 violazioni WCAG 2.2 AA                                           | -     |
 
 ## Comandi
 
@@ -25,6 +25,7 @@ npx tsc --noEmit
 ```
 
 Flags attivi in `tsconfig.json`:
+
 - `strict: true`
 - `noUncheckedIndexedAccess: true`
 - `exactOptionalPropertyTypes: true`
@@ -37,6 +38,7 @@ npx eslint .
 ```
 
 Regole TypeScript strict attive:
+
 - `@typescript-eslint/no-explicit-any: error`
 - `@typescript-eslint/no-floating-promises: error`
 - `@typescript-eslint/no-misused-promises: error`
@@ -61,6 +63,7 @@ npm run test:coverage
 ```
 
 Thresholds (`vitest.config.ts`):
+
 - `lines: 80`
 - `functions: 80`
 - `branches: 75`

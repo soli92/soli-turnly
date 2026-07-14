@@ -42,11 +42,7 @@ interface ShiftCellProps {
   violations: RuleViolation[];
 
   /** Callback click → apre ShiftEditor */
-  onCellClick: (params: {
-    userId: string;
-    date: string;
-    shift: ShiftRow | null;
-  }) => void;
+  onCellClick: (params: { userId: string; date: string; shift: ShiftRow | null }) => void;
 }
 
 /**
@@ -77,12 +73,12 @@ export function ShiftCell({
         <div
           className="flex h-full w-full items-center justify-center"
           aria-label={`Assenza: ${absence.absenceTypeName}`}
-          aria-disabled="true"
+          aria-readonly={true}
           data-testid={`shift-cell-${userId}-${date}`}
           role="cell"
         >
           <div
-            className="h-5 w-full rounded-sm bg-gray-200 mx-0.5"
+            className="mx-0.5 h-5 w-full rounded-sm bg-gray-200"
             title={absence.absenceTypeName}
           />
         </div>
@@ -92,11 +88,11 @@ export function ShiftCell({
       <div
         className="flex h-full w-full items-center justify-center px-1"
         aria-label={`Assenza: ${absence.absenceTypeName}`}
-        aria-disabled="true"
+        aria-readonly={true}
         data-testid={`shift-cell-${userId}-${date}`}
         role="cell"
       >
-        <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-500 font-medium select-none cursor-not-allowed">
+        <span className="inline-flex cursor-not-allowed items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 select-none">
           {absence.absenceTypeName}
         </span>
       </div>
@@ -133,8 +129,8 @@ export function ShiftCell({
           tabIndex={0}
           className={cn(
             'flex h-full w-full cursor-pointer items-center justify-center rounded-sm',
-            'hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400',
-            borderClass,
+            'hover:bg-blue-50 focus-visible:ring-1 focus-visible:ring-blue-400 focus-visible:outline-none',
+            borderClass
           )}
           onClick={handleClick}
           onKeyDown={handleKeyDown}
@@ -153,8 +149,8 @@ export function ShiftCell({
         tabIndex={0}
         className={cn(
           'relative flex h-full w-full cursor-pointer items-center justify-center rounded-sm',
-          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400',
-          borderClass,
+          'focus-visible:ring-1 focus-visible:ring-blue-400 focus-visible:outline-none',
+          borderClass
         )}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
@@ -162,14 +158,14 @@ export function ShiftCell({
         data-testid={`shift-cell-${userId}-${date}`}
       >
         <div
-          className="flex h-5 w-full items-center justify-center rounded-sm text-white text-xs font-bold mx-0.5 select-none"
+          className="mx-0.5 flex h-5 w-full items-center justify-center rounded-sm text-xs font-bold text-white select-none"
           style={{ backgroundColor: bgColor }}
         >
           {label}
         </div>
         {/* Badge violazione sovrapposto */}
         {(hasBlocking || hasWarning) && (
-          <span className="absolute right-0 top-0 -translate-y-1/4 translate-x-1/4">
+          <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4">
             <ViolationBadge
               violations={hasBlocking ? blockingViolations : warningViolations}
               severity={hasBlocking ? 'blocking' : 'warning'}
@@ -190,8 +186,8 @@ export function ShiftCell({
         tabIndex={0}
         className={cn(
           'group flex h-full min-h-[48px] w-full cursor-pointer items-center justify-center rounded-md',
-          'hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400',
-          borderClass,
+          'hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none',
+          borderClass
         )}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
@@ -199,7 +195,7 @@ export function ShiftCell({
         data-testid={`shift-cell-${userId}-${date}`}
       >
         <Plus
-          className="h-4 w-4 text-gray-300 group-hover:text-blue-400 transition-colors"
+          className="h-4 w-4 text-gray-300 transition-colors group-hover:text-blue-400"
           aria-hidden="true"
         />
       </div>
@@ -214,9 +210,9 @@ export function ShiftCell({
       tabIndex={0}
       className={cn(
         'relative flex h-full min-h-[48px] w-full cursor-pointer flex-col items-start justify-center rounded-md px-2 py-1',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400',
-        'hover:brightness-95 transition-all',
-        borderClass,
+        'focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none',
+        'transition-all hover:brightness-95',
+        borderClass
       )}
       style={{ backgroundColor: `${bgColor}18` }} // Sfondo molto tenue del colore turno
       onClick={handleClick}
@@ -227,11 +223,11 @@ export function ShiftCell({
       {/* Indicatore colore + codice turno */}
       <div className="flex items-center gap-1">
         <span
-          className="inline-block h-2 w-2 rounded-full flex-shrink-0"
+          className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
           style={{ backgroundColor: bgColor }}
           aria-hidden="true"
         />
-        <span className="text-xs font-semibold text-gray-800 truncate">
+        <span className="truncate text-xs font-semibold text-gray-800">
           {shift.shiftTypeName ?? shift.shiftTypeCode ?? '—'}
         </span>
       </div>
@@ -243,7 +239,7 @@ export function ShiftCell({
 
       {/* Badge violazione */}
       {(hasBlocking || hasWarning) && (
-        <span className="absolute right-1 top-1">
+        <span className="absolute top-1 right-1">
           <ViolationBadge
             violations={hasBlocking ? blockingViolations : warningViolations}
             severity={hasBlocking ? 'blocking' : 'warning'}

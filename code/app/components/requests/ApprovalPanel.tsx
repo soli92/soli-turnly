@@ -45,10 +45,13 @@ const REQUEST_TYPE_LABELS: Record<RequestRow['type'], string> = {
 };
 
 const REQUEST_STATUS_LABELS: Record<RequestRow['status'], string> = {
-  pending: 'In attesa',
+  draft: 'Bozza',
+  sent: 'In attesa',
+  awaiting_colleague: 'Attende collega',
   approved: 'Approvata',
   rejected: 'Rifiutata',
   cancelled: 'Annullata',
+  applied: 'Applicata',
 };
 
 // ---------------------------------------------------------------------------
@@ -84,7 +87,7 @@ export function ApprovalPanel({
     defaultValues: { notes: '' },
   });
 
-  const isPending = request.status === 'pending';
+  const isPending = request.status === 'sent' || request.status === 'awaiting_colleague';
 
   function handleApprove() {
     approveMutation.mutate(
@@ -93,7 +96,7 @@ export function ApprovalPanel({
         onSuccess: () => {
           onApprove?.();
         },
-      },
+      }
     );
   }
 
@@ -106,14 +109,14 @@ export function ApprovalPanel({
           rejectForm.reset();
           onReject?.();
         },
-      },
+      }
     );
   }
 
   return (
     <div
       data-testid="approval-panel"
-      className="rounded-lg border border-border bg-white p-6 space-y-4"
+      className="border-border space-y-4 rounded-lg border bg-white p-6"
     >
       {/* Intestazione richiesta */}
       <div className="space-y-1">
@@ -124,9 +127,9 @@ export function ApprovalPanel({
           <span
             className={
               'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ' +
-              (request.status === 'pending'
+              (request.status === 'sent' || request.status === 'awaiting_colleague'
                 ? 'bg-yellow-100 text-yellow-800'
-                : request.status === 'approved'
+                : request.status === 'approved' || request.status === 'applied'
                   ? 'bg-green-100 text-green-800'
                   : 'bg-red-100 text-red-800')
             }
@@ -141,18 +144,19 @@ export function ApprovalPanel({
         )}
         <p className="text-xs text-gray-400">
           Inviata il{' '}
-          {new Date(request.createdAt).toLocaleDateString('it-IT', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-          })}
+          {request.submittedAt &&
+            new Date(request.submittedAt).toLocaleDateString('it-IT', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })}
         </p>
       </div>
 
       {/* Payload sintetico */}
       {request.payload && Object.keys(request.payload).length > 0 && (
         <div className="rounded-md bg-gray-50 p-3 text-sm">
-          <p className="font-medium text-gray-700 mb-1">Dettagli richiesta</p>
+          <p className="mb-1 font-medium text-gray-700">Dettagli richiesta</p>
           {Object.entries(request.payload).map(([key, value]) => (
             <div key={key} className="flex gap-2 text-gray-600">
               <span className="font-medium capitalize">{key}:</span>
@@ -164,17 +168,12 @@ export function ApprovalPanel({
 
       {/* Warning regole */}
       {warnings.length > 0 && (
-        <div
-          role="alert"
-          className="rounded-md border border-amber-200 bg-amber-50 p-3 space-y-1"
-        >
+        <div role="alert" className="space-y-1 rounded-md border border-amber-200 bg-amber-50 p-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
-            <p className="text-sm font-medium text-amber-800">
-              Avvisi impatto ({warnings.length})
-            </p>
+            <p className="text-sm font-medium text-amber-800">Avvisi impatto ({warnings.length})</p>
           </div>
-          <ul className="space-y-1 pl-6 list-disc">
+          <ul className="list-disc space-y-1 pl-6">
             {warnings.map((w, i) => (
               <li key={i} className="text-xs text-amber-700">
                 {w}
@@ -192,19 +191,21 @@ export function ApprovalPanel({
               <Button
                 data-testid="approve-btn"
                 variant="default"
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                className="flex-1 bg-green-600 text-white hover:bg-green-700"
                 onClick={handleApprove}
                 disabled={approveMutation.isPending}
                 aria-label="Approva richiesta"
               >
                 {approveMutation.isPending ? (
                   <>
-                    <span className="animate-spin mr-2" aria-hidden="true">⏳</span>
+                    <span className="mr-2 animate-spin" aria-hidden="true">
+                      ⏳
+                    </span>
                     Approvazione...
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="h-4 w-4 mr-1" aria-hidden="true" />
+                    <CheckCircle className="mr-1 h-4 w-4" aria-hidden="true" />
                     Approva
                   </>
                 )}
@@ -217,7 +218,7 @@ export function ApprovalPanel({
                 disabled={approveMutation.isPending}
                 aria-label="Rifiuta richiesta"
               >
-                <XCircle className="h-4 w-4 mr-1" aria-hidden="true" />
+                <XCircle className="mr-1 h-4 w-4" aria-hidden="true" />
                 Rifiuta
               </Button>
             </div>
@@ -225,7 +226,7 @@ export function ApprovalPanel({
             /* Form rifiuto con note */
             <Form {...rejectForm}>
               <form
-                onSubmit={rejectForm.handleSubmit(handleReject)}
+                onSubmit={(e) => void rejectForm.handleSubmit(handleReject)(e)}
                 className="space-y-3"
                 aria-label="Form rifiuto richiesta"
               >
@@ -275,7 +276,7 @@ export function ApprovalPanel({
 
           {/* Messaggi di errore mutation */}
           {(approveMutation.isError || rejectMutation.isError) && (
-            <p role="alert" className="text-xs text-destructive">
+            <p role="alert" className="text-destructive text-xs">
               {(approveMutation.error ?? rejectMutation.error)?.message ??
                 'Si è verificato un errore'}
             </p>

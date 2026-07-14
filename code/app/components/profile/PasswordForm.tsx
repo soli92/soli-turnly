@@ -37,9 +37,7 @@ import { Input } from '@/components/ui/input';
 const passwordChangeSchema = z
   .object({
     oldPassword: z.string().min(1, 'La password attuale è obbligatoria'),
-    newPassword: z
-      .string()
-      .min(8, 'La nuova password deve essere di almeno 8 caratteri'),
+    newPassword: z.string().min(8, 'La nuova password deve essere di almeno 8 caratteri'),
     confirmPassword: z.string().min(1, 'Conferma la nuova password'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -82,14 +80,15 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
         }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as {
+        const body = (await res.json().catch(() => ({}))) as {
           error?: string;
           issues?: Array<{ path: string[]; message: string }>;
         };
         const err = new Error(body.error ?? `Errore ${res.status}`) as Error & {
           issues?: Array<{ path: string[]; message: string }>;
         };
-        err.issues = body.issues;
+        // NOTE: assegnazione condizionale per exactOptionalPropertyTypes (err.issues è optional).
+        if (body.issues) err.issues = body.issues;
         throw err;
       }
       return res.json();
@@ -106,7 +105,10 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
         }
       });
       // Caso specifico: password attuale errata
-      if (err.message.toLowerCase().includes('password') && err.message.toLowerCase().includes('errat')) {
+      if (
+        err.message.toLowerCase().includes('password') &&
+        err.message.toLowerCase().includes('errat')
+      ) {
         form.setError('oldPassword', { message: err.message });
       }
     },
@@ -119,7 +121,7 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}
         className="space-y-4"
         aria-label="Cambio password"
         noValidate
@@ -190,7 +192,7 @@ export function PasswordForm({ onSuccess }: PasswordFormProps) {
 
         {/* Errore generico */}
         {mutation.isError && !form.formState.errors.oldPassword && (
-          <p role="alert" className="text-xs text-destructive">
+          <p role="alert" className="text-destructive text-xs">
             {mutation.error?.message ?? 'Si è verificato un errore'}
           </p>
         )}

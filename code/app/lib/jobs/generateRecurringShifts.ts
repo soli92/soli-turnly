@@ -26,13 +26,9 @@ import { shifts, recurrences, absences, shiftTypes } from '@/db/schema';
 import { eq, and, lte, gte } from 'drizzle-orm';
 import { validateRecurrence } from '@/lib/rules';
 import { insertAuditLog } from '@/lib/audit';
-import {
-  parseISO,
-  addDays,
-  isWithinInterval,
-  startOfDay,
-  differenceInDays,
-} from 'date-fns';
+import { parseISO, addDays, startOfDay, differenceInDays } from 'date-fns';
+import { TZDate } from '@date-fns/tz';
+import { APP_TIMEZONE } from '@/lib/date';
 
 // ---------------------------------------------------------------------------
 // Tipi evento
@@ -77,18 +73,16 @@ function expandDates(
     endDate: string | null;
   },
   periodStart: string,
-  periodEnd: string,
+  periodEnd: string
 ): Date[] {
   const recStart = parseISO(rec.startDate);
   const recEnd = rec.endDate ? parseISO(rec.endDate) : parseISO(periodEnd);
 
   // Intersezione tra il periodo richiesto e il range di validità della ricorrenza
   const rangeStart = startOfDay(
-    recStart > parseISO(periodStart) ? recStart : parseISO(periodStart),
+    recStart > parseISO(periodStart) ? recStart : parseISO(periodStart)
   );
-  const rangeEnd = startOfDay(
-    recEnd < parseISO(periodEnd) ? recEnd : parseISO(periodEnd),
-  );
+  const rangeEnd = startOfDay(recEnd < parseISO(periodEnd) ? recEnd : parseISO(periodEnd));
 
   if (rangeStart > rangeEnd) return [];
 
@@ -153,6 +147,7 @@ function expandDates(
 export const generateRecurringShifts = inngest.createFunction(
   {
     id: 'generate-recurring-shifts',
+    name: 'Generate Recurring Shifts',
     retries: 3,
   },
   { event: 'shift/recurrence.trigger' as RecurrenceTriggerEvent['name'] },
@@ -201,8 +196,8 @@ export const generateRecurringShifts = inngest.createFunction(
             eq(absences.status, 'approved'),
             // Assenze che si sovrappongono al periodo di interesse
             lte(absences.startDate, periodEnd),
-            gte(absences.endDate, periodStart),
-          ),
+            gte(absences.endDate, periodStart)
+          )
         );
     });
 
@@ -213,8 +208,10 @@ export const generateRecurringShifts = inngest.createFunction(
     //         aggiunta in un TSK dedicato (Q_001 aperta).
     // ------------------------------------------------------------------
     const filterResult = await step.run('filter-conflicts', async () => {
-      // validateRecurrence è una pure function — può girare in step
-      return validateRecurrence(recurrence.userId, candidateDates, userAbsences, []);
+      // NOTE: Inngest serializza i return value degli step come JSON → Date[] diventa string[].
+      // Convertiamo le date string -> Date prima di passarle alla pure function.
+      const candidateDateObjs = (candidateDates as unknown as string[]).map((d) => new Date(d));
+      return validateRecurrence(recurrence.userId, candidateDateObjs, userAbsences, []);
     });
 
     const validDates = filterResult.valid.map((c) => c.date);
@@ -247,8 +244,8 @@ export const generateRecurringShifts = inngest.createFunction(
       const shiftValues = validDates.map((date) => {
         // Costruisce startDt/endDt combinando la data candidata con
         // defaultStartTime / defaultEndTime del tipo turno
-        // I campi time in Drizzle sono stringhe "HH:mm:ss" o "HH:mm"
-        const dateStr = date.toISOString().slice(0, 10); // YYYY-MM-DD
+        // NOTE: validDates contiene stringhe YYYY-MM-DD (serializzate da Inngest step).
+        const dateStr = typeof date === 'string' ? date : (date as Date).toISOString().slice(0, 10);
 
         const parseTime = (t: string): { h: number; m: number } => {
           const [h, m] = t.split(':').map(Number);
@@ -258,20 +255,26 @@ export const generateRecurringShifts = inngest.createFunction(
         const start = parseTime(shiftType.defaultStartTime);
         const end = parseTime(shiftType.defaultEndTime);
 
-        // Costruisce timestamp UTC combinando data + orari locali (Europe/Rome)
-        // NOTA: in un ambiente di produzione usare fromZoned da @/lib/date
-        // per gestire correttamente il DST. Qui usiamo UTC naive per semplicità
-        // del job asincrono — i turni verranno visualizzati in timezone locale sul FE.
+        // DST-safe: interpreta gli orari in APP_TIMEZONE (Europe/Rome) anziché UTC.
+        // TZDate.tz costruisce un istante UTC dal wall-clock locale, gestendo
+        // correttamente il cambio ora legale (T-DOM-08).
+        const [yearStr, monthStr, dayStr] = dateStr.split('-');
+        const year = parseInt(yearStr!, 10);
+        const month = parseInt(monthStr!, 10) - 1; // TZDate.tz usa mesi 0-indexed
+        const day = parseInt(dayStr!, 10);
+
         const startDt = new Date(
-          `${dateStr}T${String(start.h).padStart(2, '0')}:${String(start.m).padStart(2, '0')}:00Z`,
+          TZDate.tz(APP_TIMEZONE, year, month, day, start.h, start.m, 0, 0).getTime()
         );
-        const endDt = new Date(
-          `${dateStr}T${String(end.h).padStart(2, '0')}:${String(end.m).padStart(2, '0')}:00Z`,
+        let endDt = new Date(
+          TZDate.tz(APP_TIMEZONE, year, month, day, end.h, end.m, 0, 0).getTime()
         );
 
-        // Se endDt <= startDt → il turno va a notte (es. 22:00–06:00)
+        // Se endDt <= startDt → turno notturno (attraversa la mezzanotte)
         if (endDt <= startDt) {
-          endDt.setDate(endDt.getDate() + 1);
+          endDt = new Date(
+            TZDate.tz(APP_TIMEZONE, year, month, day + 1, end.h, end.m, 0, 0).getTime()
+          );
         }
 
         return {
@@ -309,8 +312,8 @@ export const generateRecurringShifts = inngest.createFunction(
               periodStart,
               periodEnd,
             },
-          }),
-        ),
+          })
+        )
       );
     });
 
@@ -321,5 +324,5 @@ export const generateRecurringShifts = inngest.createFunction(
       periodStart,
       periodEnd,
     };
-  },
+  }
 );

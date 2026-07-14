@@ -78,7 +78,7 @@ export function ProfileForm({ user, onSuccess }: ProfileFormProps) {
       {/* Form campi modificabili */}
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}
           className="space-y-4"
           aria-label="Modifica profilo"
           noValidate
@@ -125,14 +125,14 @@ export function ProfileForm({ user, onSuccess }: ProfileFormProps) {
           {/* Email — read only (non modificabile dal dipendente) */}
           <div className="space-y-2">
             <label
-              className="text-sm font-medium leading-none text-gray-500"
+              className="text-sm leading-none font-medium text-gray-500"
               htmlFor="profile-email-display"
             >
               Email (non modificabile)
             </label>
             <p
               id="profile-email-display"
-              className="flex h-9 w-full items-center rounded-md border border-input bg-gray-50 px-3 py-1 text-sm text-muted-foreground"
+              className="border-input text-muted-foreground flex h-9 w-full items-center rounded-md border bg-gray-50 px-3 py-1 text-sm"
               aria-readonly="true"
             >
               {user.email}
@@ -141,7 +141,7 @@ export function ProfileForm({ user, onSuccess }: ProfileFormProps) {
 
           {/* Errore generico */}
           {mutation.isError && (
-            <p role="alert" className="text-xs text-destructive">
+            <p role="alert" className="text-destructive text-xs">
               {mutation.error?.message ?? 'Si è verificato un errore'}
             </p>
           )}
@@ -162,40 +162,30 @@ export function ProfileForm({ user, onSuccess }: ProfileFormProps) {
       </Form>
 
       {/* Sezione dati contrattuali — sola lettura (RB-13, T-SEC-04) */}
-      <div className="rounded-lg border border-border bg-gray-50 p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700">
-          Dati contrattuali (sola lettura)
-        </h3>
+      <div className="border-border space-y-3 rounded-lg border bg-gray-50 p-4">
+        <h3 className="text-sm font-semibold text-gray-700">Dati contrattuali (sola lettura)</h3>
         <p className="text-xs text-gray-500">
-          Questi dati sono gestiti dall&apos;amministrazione. Per modificarli contatta
-          il tuo responsabile.
+          Questi dati sono gestiti dall&apos;amministrazione. Per modificarli contatta il tuo
+          responsabile.
         </p>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Ruolo
-            </p>
-            <p className="text-sm text-muted-foreground capitalize">
+            <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">Ruolo</p>
+            <p className="text-muted-foreground text-sm capitalize">
               {user.role === 'admin' ? 'Amministratore' : 'Dipendente'}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">
               Ore contratto
             </p>
-            <p className="text-sm text-muted-foreground">
-              {user.contractHours}h / settimana
-            </p>
+            <p className="text-muted-foreground text-sm">{user.contractHours}h / settimana</p>
           </div>
           {user.qualificationName && (
-            <div className="space-y-1 col-span-2">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Qualifica
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {user.qualificationName}
-              </p>
+            <div className="col-span-2 space-y-1">
+              <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">Qualifica</p>
+              <p className="text-muted-foreground text-sm">{user.qualificationName}</p>
             </div>
           )}
         </div>

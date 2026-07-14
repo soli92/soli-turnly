@@ -63,7 +63,7 @@ export function useUsers() {
       if (!res.ok) {
         throw new Error(`Errore nel caricamento utenti: ${res.status}`);
       }
-      const json = await res.json() as { data: UserRow[] };
+      const json = (await res.json()) as { data: UserRow[] };
       return json.data;
     },
     staleTime: 60 * 1000,
@@ -103,14 +103,14 @@ export function usePatchMe() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as {
+        const body = (await res.json().catch(() => ({}))) as {
           error?: string;
           issues?: Array<{ path: string[]; message: string }>;
         };
         const err = new Error(body.error ?? `Errore ${res.status}`) as Error & {
           issues?: Array<{ path: string[]; message: string }>;
         };
-        err.issues = body.issues;
+        if (body.issues) err.issues = body.issues;
         throw err;
       }
       return res.json() as Promise<MeRow>;

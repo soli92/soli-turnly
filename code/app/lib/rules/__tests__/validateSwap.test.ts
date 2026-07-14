@@ -11,12 +11,7 @@ import type { ExistingShift } from '../types';
 const USER_A = 'user-a';
 const USER_B = 'user-b';
 
-function makeShift(
-  id: string,
-  userId: string,
-  start: string,
-  end: string,
-): ExistingShift {
+function makeShift(id: string, userId: string, start: string, end: string): ExistingShift {
   return { id, userId, startDt: new Date(start), endDt: new Date(end) };
 }
 
@@ -51,7 +46,7 @@ describe('validateSwap (RB-10)', () => {
         'sB-existing',
         USER_B,
         '2025-06-10T12:00:00Z',
-        '2025-06-10T20:00:00Z',
+        '2025-06-10T20:00:00Z'
       );
 
       const result = validateSwap({

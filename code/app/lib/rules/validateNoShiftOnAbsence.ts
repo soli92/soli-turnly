@@ -13,15 +13,10 @@ import { emptyResult } from './types';
 /**
  * Verifica che il turno non cada durante un'assenza con status "approved".
  */
-export function validateNoShiftOnAbsence(
-  input: ShiftInput,
-  absences: Absence[],
-): ValidationResult {
+export function validateNoShiftOnAbsence(input: ShiftInput, absences: Absence[]): ValidationResult {
   const result = emptyResult();
 
-  const approved = absences.filter(
-    (a) => a.userId === input.userId && a.status === 'approved',
-  );
+  const approved = absences.filter((a) => a.userId === input.userId && a.status === 'approved');
 
   for (const absence of approved) {
     const absenceStart = startOfDay(parseISO(absence.startDate));
@@ -30,9 +25,7 @@ export function validateNoShiftOnAbsence(
     // Controlla se almeno uno dei giorni del turno ricade nell'assenza
     const shiftDay = startOfDay(input.startDt);
 
-    if (
-      isWithinInterval(shiftDay, { start: absenceStart, end: absenceEnd })
-    ) {
+    if (isWithinInterval(shiftDay, { start: absenceStart, end: absenceEnd })) {
       result.valid = false;
       result.blocking.push({
         ruleId: 'RB-08',

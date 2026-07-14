@@ -20,8 +20,7 @@ export const ApiResponse = {
   created: (data: unknown) => Response.json(data, { status: 201 }),
 
   /** 401 Unauthorized — sessione mancante o scaduta. */
-  unauthorized: () =>
-    Response.json({ error: 'unauthorized' }, { status: 401 }),
+  unauthorized: () => Response.json({ error: 'unauthorized' }, { status: 401 }),
 
   /** 403 Forbidden — autenticato ma senza permesso. */
   forbidden: () => Response.json({ error: 'forbidden' }, { status: 403 }),
@@ -30,25 +29,21 @@ export const ApiResponse = {
    * 400 Bad Request — body non valido (Zod issues).
    * @param issues Array di ZodIssue o messaggio stringa.
    */
-  badRequest: (issues: unknown) =>
-    Response.json({ error: 'validation', issues }, { status: 400 }),
+  badRequest: (issues: unknown) => Response.json({ error: 'validation', issues }, { status: 400 }),
 
   /**
    * 404 Not Found.
    * @param msg Messaggio opzionale.
    */
-  notFound: (msg = 'not found') =>
-    Response.json({ error: msg }, { status: 404 }),
+  notFound: (msg = 'not found') => Response.json({ error: msg }, { status: 404 }),
 
   /**
    * 409 Conflict — risorsa già esistente o stato non compatibile.
    */
-  conflict: (msg = 'conflict') =>
-    Response.json({ error: msg }, { status: 409 }),
+  conflict: (msg = 'conflict') => Response.json({ error: msg }, { status: 409 }),
 
   /**
    * 500 Internal Server Error — errore imprevisto del server.
    */
-  serverError: (msg = 'internal server error') =>
-    Response.json({ error: msg }, { status: 500 }),
+  serverError: (msg = 'internal server error') => Response.json({ error: msg }, { status: 500 }),
 };

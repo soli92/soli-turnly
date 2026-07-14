@@ -41,7 +41,7 @@ function SubmitButton({ isPending }: SubmitButtonProps) {
       type="submit"
       disabled={isPending}
       aria-busy={isPending}
-      className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+      className="bg-primary text-primary-foreground focus-visible:outline-primary flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {isPending ? (
         <>
@@ -64,18 +64,13 @@ export default function LoginForm({ action }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <form
-      action={formAction}
-      noValidate
-      aria-label="Form di accesso"
-      className="space-y-4"
-    >
+    <form action={formAction} noValidate aria-label="Form di accesso" className="space-y-4">
       {/* Messaggio errore — RF-A CA1: generico, non distingue email/password */}
       {state?.error && (
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-4 py-3 text-sm"
         >
           {state.error}
         </div>
@@ -83,10 +78,7 @@ export default function LoginForm({ action }: LoginFormProps) {
 
       {/* Campo email */}
       <div className="space-y-1.5">
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-text"
-        >
+        <label htmlFor="email" className="text-text block text-sm font-medium">
           Indirizzo email
         </label>
         <input
@@ -96,7 +88,7 @@ export default function LoginForm({ action }: LoginFormProps) {
           autoComplete="email"
           required
           disabled={isPending}
-          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="border-border bg-surface text-text placeholder:text-muted focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
           placeholder="nome@azienda.it"
           aria-required="true"
         />
@@ -104,10 +96,7 @@ export default function LoginForm({ action }: LoginFormProps) {
 
       {/* Campo password con toggle visibilità */}
       <div className="space-y-1.5">
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-text"
-        >
+        <label htmlFor="password" className="text-text block text-sm font-medium">
           Password
         </label>
         <div className="relative">
@@ -118,7 +107,7 @@ export default function LoginForm({ action }: LoginFormProps) {
             autoComplete="current-password"
             required
             disabled={isPending}
-            className="w-full rounded-md border border-border bg-surface px-3 py-2 pr-10 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="border-border bg-surface text-text placeholder:text-muted focus:border-primary focus:ring-primary/20 w-full rounded-md border px-3 py-2 pr-10 text-sm focus:ring-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             placeholder="••••••••"
             aria-required="true"
           />
@@ -128,7 +117,7 @@ export default function LoginForm({ action }: LoginFormProps) {
             disabled={isPending}
             aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
             aria-controls="password"
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed"
+            className="text-muted hover:text-text focus-visible:ring-primary/40 absolute inset-y-0 right-0 flex items-center px-3 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed"
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4" aria-hidden="true" />

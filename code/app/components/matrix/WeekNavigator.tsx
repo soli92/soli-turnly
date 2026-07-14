@@ -16,7 +16,15 @@
  * - Focus ring visibile
  */
 
-import { format, addWeeks, subWeeks, addMonths, subMonths, endOfISOWeek, startOfMonth, endOfMonth } from 'date-fns';
+import {
+  format,
+  addWeeks,
+  subWeeks,
+  addMonths,
+  subMonths,
+  endOfISOWeek,
+  startOfMonth,
+} from 'date-fns';
 import { it } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,11 +35,7 @@ interface WeekNavigatorProps {
   onNavigate: (newDate: Date) => void;
 }
 
-export function WeekNavigator({
-  currentDate,
-  viewMode,
-  onNavigate,
-}: WeekNavigatorProps) {
+export function WeekNavigator({ currentDate, viewMode, onNavigate }: WeekNavigatorProps) {
   const handlePrev = () => {
     if (viewMode === 'week') {
       onNavigate(subWeeks(currentDate, 1));
@@ -59,9 +63,7 @@ export function WeekNavigator({
         variant="outline"
         size="icon"
         onClick={handlePrev}
-        aria-label={
-          viewMode === 'week' ? 'Settimana precedente' : 'Mese precedente'
-        }
+        aria-label={viewMode === 'week' ? 'Settimana precedente' : 'Mese precedente'}
         data-testid="week-navigator-prev"
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -79,9 +81,7 @@ export function WeekNavigator({
         variant="outline"
         size="icon"
         onClick={handleNext}
-        aria-label={
-          viewMode === 'week' ? 'Settimana successiva' : 'Mese successivo'
-        }
+        aria-label={viewMode === 'week' ? 'Settimana successiva' : 'Mese successivo'}
         data-testid="week-navigator-next"
       >
         <ChevronRight className="h-4 w-4" aria-hidden="true" />

@@ -10,7 +10,7 @@
 import { auth } from '@/auth';
 import { db } from '@/db';
 import { notifications } from '@/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { ApiResponse } from '@/lib/api-response';
 
 // =============================================================
@@ -34,12 +34,10 @@ export async function GET(req: Request): Promise<Response> {
     .from(notifications)
     .where(
       unreadOnly
-        ? and(
-            eq(notifications.userId, session.user.id as string),
-            isNull(notifications.readAt),
-          )
-        : eq(notifications.userId, session.user.id as string),
+        ? and(eq(notifications.userId, session.user.id as string), isNull(notifications.readAt))
+        : eq(notifications.userId, session.user.id as string)
     )
+    .orderBy(sql`${notifications.readAt} NULLS FIRST`, desc(notifications.createdAt))
     .limit(limit)
     .offset(offset);
 
@@ -47,12 +45,7 @@ export async function GET(req: Request): Promise<Response> {
   const unreadCount = await db
     .select({ id: notifications.id })
     .from(notifications)
-    .where(
-      and(
-        eq(notifications.userId, session.user.id as string),
-        isNull(notifications.readAt),
-      ),
-    );
+    .where(and(eq(notifications.userId, session.user.id as string), isNull(notifications.readAt)));
 
   return ApiResponse.ok({
     data: rows,

@@ -9,16 +9,20 @@
  * POST /api/shifts
  *   - Admin only (T-SEC-02).
  *   - Valida con shiftCreateSchema; stub regole RB (TSK-006).
+ *   - TSK-029: dispatch Inngest 'notification/email.send' al dipendente assegnato (fire-and-forget).
  */
 
+import { after } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/db';
-import { shifts } from '@/db/schema';
+import { shifts, users, shiftTypes } from '@/db/schema';
 import { and, eq, gte, lte, type SQL } from 'drizzle-orm';
 import { ApiResponse } from '@/lib/api-response';
 import { insertAuditLog, extractIp, extractUserAgent } from '@/lib/audit';
 import { shiftCreateSchema } from '@/lib/zod';
 import { emitToUser } from '@/lib/sse/emit';
+import { inngest } from '@/lib/inngest';
+import { formatISODate, formatTime, APP_TIMEZONE } from '@/lib/date';
 
 // =============================================================
 // GET /api/shifts
@@ -127,6 +131,51 @@ export async function POST(req: Request): Promise<Response> {
     type: 'shift.assigned',
     payload: { shiftId: newShift!.id, date: newShift!.date },
     timestamp: new Date().toISOString(),
+  });
+
+  // TSK-029: dispatch email Inngest via after() — garantisce l'esecuzione su Vercel
+  const createdShift = newShift!;
+  after(async () => {
+    try {
+      // Lookup email e nome del dipendente assegnato
+      const [employee] = await db
+        .select({ email: users.email, firstName: users.firstName, lastName: users.lastName })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!employee?.email) return;
+
+      // Lookup nome tipo turno (facoltativo — può essere null)
+      let shiftTypeName = '';
+      if (shiftTypeId) {
+        const [st] = await db
+          .select({ name: shiftTypes.name })
+          .from(shiftTypes)
+          .where(eq(shiftTypes.id, shiftTypeId))
+          .limit(1);
+        shiftTypeName = st?.name ?? '';
+      }
+
+      await inngest.send({
+        name: 'notification/email.send',
+        data: {
+          to: employee.email,
+          subject: 'Nuovo turno assegnato — Turnly',
+          template: 'shift-assigned',
+          data: {
+            recipientName: `${employee.firstName} ${employee.lastName}`,
+            date: formatISODate(createdShift.date, APP_TIMEZONE, 'EEEE d MMMM yyyy'),
+            startTime: formatTime(createdShift.startDt),
+            endTime: formatTime(createdShift.endDt),
+            shiftTypeName,
+            appUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'https://turnly.app',
+          },
+        },
+      });
+    } catch (err) {
+      console.error('[TSK-029] dispatch shift-assigned email failed', err);
+    }
   });
 
   return ApiResponse.created(newShift);

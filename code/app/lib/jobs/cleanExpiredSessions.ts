@@ -25,6 +25,7 @@ import { and, isNotNull, lt } from 'drizzle-orm';
 export const cleanOldNotifications = inngest.createFunction(
   {
     id: 'clean-old-notifications',
+    name: 'Clean Old Notifications',
     // Nessun retry per i job di manutenzione: se fallisce, ritenta la notte successiva
     retries: 0,
   },
@@ -46,8 +47,8 @@ export const cleanOldNotifications = inngest.createFunction(
             // Solo notifiche già lette (readAt IS NOT NULL)
             isNotNull(notifications.readAt),
             // Lette più di 30 giorni fa
-            lt(notifications.readAt, cutoff),
-          ),
+            lt(notifications.readAt, cutoff)
+          )
         )
         .returning({ id: notifications.id });
 
@@ -55,5 +56,5 @@ export const cleanOldNotifications = inngest.createFunction(
     });
 
     return result;
-  },
+  }
 );

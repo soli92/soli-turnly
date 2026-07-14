@@ -30,10 +30,7 @@ export const metadata: Metadata = {
 // Viene passata come prop al client component LoginForm.
 // ----------------------------------------------------------------
 
-async function loginAction(
-  _prevState: { error?: string } | null,
-  formData: FormData,
-) {
+async function loginAction(_prevState: { error?: string } | null, formData: FormData) {
   'use server';
 
   try {
@@ -62,18 +59,14 @@ async function loginAction(
 export default function LoginPage() {
   return (
     <main
-      className="flex min-h-screen items-center justify-center bg-background px-4"
+      className="bg-background flex min-h-screen items-center justify-center px-4"
       aria-label="Pagina di accesso"
     >
-      <div className="w-full max-w-sm space-y-6 rounded-lg border border-border bg-surface p-8 shadow-sm">
+      <div className="border-border bg-surface w-full max-w-sm space-y-6 rounded-lg border p-8 shadow-sm">
         {/* Header */}
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-text">
-            Turnly
-          </h1>
-          <p className="text-sm text-muted">
-            Accedi al tuo account
-          </p>
+          <h1 className="text-text text-2xl font-bold tracking-tight">Turnly</h1>
+          <p className="text-muted text-sm">Accedi al tuo account</p>
         </div>
 
         {/* Form — client component con stato e interattività */}

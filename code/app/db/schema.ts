@@ -1,17 +1,21 @@
 /**
  * TSK-002 — Schema Drizzle ORM completo (10 tabelle)
+ * TSK-013 — Aggiunta 3 tabelle mancanti: availability, coverage_requirements, swap_operations
  * Stack: Drizzle ORM + PostgreSQL 16
  *
  * Tabelle:
  *   qualifications, users, shift_types, shifts,
  *   absence_types, absences, requests, recurrences,
- *   notifications, audit_logs
+ *   notifications, audit_logs,
+ *   availability, coverage_requirements, swap_operations
  *
  * Indici critici:
  *   - shifts: EXCLUDE USING gist (userId, tstzrange(startDt, endDt)) — RB-01/T-INT-02
  *             (definito in migration 0002_exclude_gist.sql — richiede btree_gist)
  *   - notifications: (userId, readAt) — inbox counter O(1)
  *   - requests: (userId, status) — coda approvazioni + lista dipendente
+ *   - availability: (userId) — lookup disponibilità dipendente
+ *   - coverage_requirements: (qualificationId) — lookup requisiti copertura
  */
 
 import {
@@ -19,6 +23,7 @@ import {
   pgEnum,
   uuid,
   text,
+  varchar,
   integer,
   boolean,
   timestamp,
@@ -35,23 +40,11 @@ import {
 
 export const userRoleEnum = pgEnum('user_role', ['admin', 'employee']);
 
-export const shiftStatusEnum = pgEnum('shift_status', [
-  'planned',
-  'confirmed',
-  'cancelled',
-]);
+export const shiftStatusEnum = pgEnum('shift_status', ['planned', 'confirmed', 'cancelled']);
 
-export const shiftOriginEnum = pgEnum('shift_origin', [
-  'manual',
-  'recurrence',
-  'swap',
-]);
+export const shiftOriginEnum = pgEnum('shift_origin', ['manual', 'recurrence', 'swap']);
 
-export const absenceStatusEnum = pgEnum('absence_status', [
-  'pending',
-  'approved',
-  'rejected',
-]);
+export const absenceStatusEnum = pgEnum('absence_status', ['pending', 'approved', 'rejected']);
 
 export const requestTypeEnum = pgEnum('request_type', [
   'absence',
@@ -75,6 +68,16 @@ export const recurrenceFrequencyEnum = pgEnum('recurrence_frequency', [
   'biweekly',
   'monthly',
 ]);
+
+export const availabilityTypeEnum = pgEnum('availability_type', [
+  'available',
+  'unavailable',
+  'preference',
+]);
+
+export const availabilityScopeEnum = pgEnum('availability_scope', ['recurring', 'date_range']);
+
+export const swapOriginEnum = pgEnum('swap_origin', ['admin', 'request']);
 
 // ---------------------------------------------------------------------------
 // Table 1: qualifications
@@ -100,19 +103,18 @@ export const users = pgTable(
     role: userRoleEnum('role').notNull().default('employee'),
     firstName: text('first_name').notNull(),
     lastName: text('last_name').notNull(),
-    qualificationId: uuid('qualification_id').references(
-      () => qualifications.id,
-      { onDelete: 'set null' },
-    ),
+    qualificationId: uuid('qualification_id').references(() => qualifications.id, {
+      onDelete: 'set null',
+    }),
     contractHours: integer('contract_hours').notNull().default(36),
+    phone: varchar('phone', { length: 20 }),
+    contractType: varchar('contract_type', { length: 50 }),
     active: boolean('active').notNull().default(true),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     emailIdx: uniqueIndex('users_email_idx').on(t.email),
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -133,7 +135,7 @@ export const shiftTypes = pgTable(
   },
   (t) => ({
     codeIdx: uniqueIndex('shift_types_code_idx').on(t.code),
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -163,21 +165,13 @@ export const shifts = pgTable(
     createdBy: uuid('created_by')
       .notNull()
       .references(() => users.id),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     userDateIdx: index('shifts_user_date_idx').on(t.userId, t.date),
-    userStartEndIdx: index('shifts_user_start_end_idx').on(
-      t.userId,
-      t.startDt,
-      t.endDt,
-    ),
-  }),
+    userStartEndIdx: index('shifts_user_start_end_idx').on(t.userId, t.startDt, t.endDt),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -195,7 +189,7 @@ export const absenceTypes = pgTable(
   },
   (t) => ({
     codeIdx: uniqueIndex('absence_types_code_idx').on(t.code),
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -215,16 +209,14 @@ export const absences = pgTable(
     startDate: date('start_date').notNull(),
     endDate: date('end_date').notNull(),
     status: absenceStatusEnum('status').notNull().default('pending'),
-    requestedAt: timestamp('requested_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
     approvedBy: uuid('approved_by').references(() => users.id),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
     notes: text('notes'),
   },
   (t) => ({
     userStatusIdx: index('absences_user_status_idx').on(t.userId, t.status),
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -248,7 +240,7 @@ export const requests = pgTable(
   },
   (t) => ({
     userStatusIdx: index('requests_user_status_idx').on(t.userId, t.status),
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -291,14 +283,12 @@ export const notifications = pgTable(
     readAt: timestamp('read_at', { withTimezone: true }),
     relatedEntityType: text('related_entity_type'),
     relatedEntityId: uuid('related_entity_id'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     // Inbox counter O(1): count WHERE user_id = ? AND read_at IS NULL
     userReadIdx: index('notifications_user_read_idx').on(t.userId, t.readAt),
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -319,16 +309,86 @@ export const auditLogs = pgTable(
     after: jsonb('after'),
     ip: text('ip'),
     userAgent: text('user_agent'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     actorIdx: index('audit_logs_actor_idx').on(t.actorId),
     entityIdx: index('audit_logs_entity_idx').on(t.entityType, t.entityId),
     createdAtIdx: index('audit_logs_created_at_idx').on(t.createdAt),
-  }),
+  })
 );
+
+// ---------------------------------------------------------------------------
+// Table 11: availability
+// TSK-013
+// ---------------------------------------------------------------------------
+
+export const availability = pgTable(
+  'availability',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: availabilityTypeEnum('type').notNull(),
+    scope: availabilityScopeEnum('scope').notNull(),
+    // recurring:   { dayOfWeek: 0-6, startTime: "HH:mm", endTime: "HH:mm" }
+    // date_range:  { startDate: ISO, endDate: ISO, startTime?: "HH:mm", endTime?: "HH:mm" }
+    definition: jsonb('definition').notNull(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userIdx: index('availability_user_idx').on(t.userId),
+  })
+);
+
+// ---------------------------------------------------------------------------
+// Table 12: coverage_requirements
+// TSK-013
+// ---------------------------------------------------------------------------
+
+export const coverageRequirements = pgTable(
+  'coverage_requirements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    qualificationId: uuid('qualification_id')
+      .notNull()
+      .references(() => qualifications.id),
+    shiftTypeId: uuid('shift_type_id').references(() => shiftTypes.id), // null = qualsiasi tipologia
+    dayOfWeek: integer('day_of_week'), // 0-6, null = tutti i giorni
+    minimumCount: integer('minimum_count').notNull().default(1),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    qualIdx: index('coverage_qual_idx').on(t.qualificationId),
+  })
+);
+
+// ---------------------------------------------------------------------------
+// Table 13: swap_operations
+// TSK-013
+// ---------------------------------------------------------------------------
+
+export const swapOperations = pgTable('swap_operations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  shiftAId: uuid('shift_a_id')
+    .notNull()
+    .references(() => shifts.id),
+  shiftBId: uuid('shift_b_id')
+    .notNull()
+    .references(() => shifts.id),
+  origin: swapOriginEnum('origin').notNull(),
+  requestId: uuid('request_id').references(() => requests.id),
+  adminId: uuid('admin_id').references(() => users.id),
+  // { blocking: [], warnings: [] }
+  validationOutcome: jsonb('validation_outcome'),
+  reason: text('reason'),
+  executedAt: timestamp('executed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 // ---------------------------------------------------------------------------
 // Type exports (inferred from schema)
@@ -363,3 +423,12 @@ export type NewNotification = typeof notifications.$inferInsert;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type Availability = typeof availability.$inferSelect;
+export type NewAvailability = typeof availability.$inferInsert;
+
+export type CoverageRequirement = typeof coverageRequirements.$inferSelect;
+export type NewCoverageRequirement = typeof coverageRequirements.$inferInsert;
+
+export type SwapOperation = typeof swapOperations.$inferSelect;
+export type NewSwapOperation = typeof swapOperations.$inferInsert;

@@ -57,13 +57,9 @@ import { ShiftCell } from './ShiftCell';
 import { ShiftEditor } from './ShiftEditor';
 import { MatrixFilters, type ViewMode } from './MatrixFilters';
 
-import type {
-  EmployeeRow,
-  ShiftRow,
-  AbsenceRow,
-  ShiftTypeRow,
-  RuleViolation,
-} from '@/types';
+import type { EmployeeRow, ShiftRow, AbsenceRow, ShiftTypeRow, RuleViolation } from '@/types';
+import { validateShift } from '@/lib/rules';
+import type { ExistingShift, Absence } from '@/lib/rules';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,8 +93,9 @@ interface ShiftGridProps {
 function parseISOWeekParam(weekStr: string): Date {
   const match = weekStr.match(/^(\d{4})-W(\d{2})$/);
   if (!match) return startOfISOWeek(new Date());
-  const year = parseInt(match[1], 10);
-  const week = parseInt(match[2], 10);
+  // match[1] and match[2] are guaranteed by the regex (noUncheckedIndexedAccess guard)
+  const year = parseInt(match[1]!, 10);
+  const week = parseInt(match[2]!, 10);
   // Jan 4 is always in ISO week 1
   const jan4 = new Date(year, 0, 4);
   return addDays(startOfISOWeek(jan4), (week - 1) * 7);
@@ -139,9 +136,7 @@ export function ShiftGrid({
   // Navigation state
   // -----------------------------------------------------------------------
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [currentDate, setCurrentDate] = useState<Date>(
-    () => parseISOWeekParam(initialWeek),
-  );
+  const [currentDate, setCurrentDate] = useState<Date>(() => parseISOWeekParam(initialWeek));
 
   // -----------------------------------------------------------------------
   // Compute period range + TanStack Query
@@ -170,10 +165,11 @@ export function ShiftGrid({
   const currentWeekKey = toISOWeekKey(currentDate);
   const currentMonthKey = format(currentDate, 'yyyy-MM');
 
+  // NOTE: initialData non può essere undefined con exactOptionalPropertyTypes — spread condizionale.
   const weekQuery = useShifts(currentWeekKey, {
-    initialData: viewMode === 'week' && currentWeekKey === initialWeek
-      ? initialShifts
-      : undefined,
+    ...(viewMode === 'week' && currentWeekKey === initialWeek
+      ? { initialData: initialShifts }
+      : {}),
     enabled: viewMode === 'week',
   });
 
@@ -182,9 +178,7 @@ export function ShiftGrid({
   });
 
   const shifts: ShiftRow[] =
-    viewMode === 'week'
-      ? (weekQuery.data ?? initialShifts)
-      : (monthQuery.data ?? []);
+    viewMode === 'week' ? (weekQuery.data ?? initialShifts) : (monthQuery.data ?? []);
 
   // -----------------------------------------------------------------------
   // Filter state
@@ -206,7 +200,7 @@ export function ShiftGrid({
     ({ userId, date, shift }: { userId: string; date: string; shift: ShiftRow | null }) => {
       setEditorState({ open: true, userId, date, shift });
     },
-    [],
+    []
   );
 
   // -----------------------------------------------------------------------
@@ -235,6 +229,59 @@ export function ShiftGrid({
   }, [absences]);
 
   // -----------------------------------------------------------------------
+  // Violation map: pre-calcola RB-01..09 per ogni cella con turno
+  // -----------------------------------------------------------------------
+  const violationMap = useMemo(() => {
+    const map = new Map<string, RuleViolation[]>();
+
+    // Raggruppa turni attivi per userId
+    const shiftsByUser = new Map<string, ShiftRow[]>();
+    shifts
+      .filter((s) => s.status !== 'cancelled')
+      .forEach((s) => {
+        const arr = shiftsByUser.get(s.userId) ?? [];
+        arr.push(s);
+        shiftsByUser.set(s.userId, arr);
+      });
+
+    // Raggruppa assenze per userId
+    const absencesByUser = new Map<string, AbsenceRow[]>();
+    absences.forEach((a) => {
+      const arr = absencesByUser.get(a.userId) ?? [];
+      arr.push(a);
+      absencesByUser.set(a.userId, arr);
+    });
+
+    // Per ogni utente, valida ciascun turno contro gli altri
+    shiftsByUser.forEach((userShifts, userId) => {
+      const existingShifts: ExistingShift[] = userShifts.map((s) => ({
+        id: s.id,
+        userId: s.userId,
+        startDt: new Date(s.startDt),
+        endDt: new Date(s.endDt),
+      }));
+      const userAbsences: Absence[] = (absencesByUser.get(userId) ?? []).map((a) => ({
+        id: a.id,
+        userId: a.userId,
+        startDate: a.startDate,
+        endDate: a.endDate,
+        status: 'approved',
+      }));
+
+      existingShifts.forEach((shiftEx) => {
+        const result = validateShift(shiftEx, { existingShifts, absences: userAbsences });
+        const violations: RuleViolation[] = [...result.blocking, ...result.warnings];
+        if (violations.length > 0) {
+          const dateStr = format(shiftEx.startDt, 'yyyy-MM-dd');
+          map.set(`${userId}:${dateStr}`, violations);
+        }
+      });
+    });
+
+    return map;
+  }, [shifts, absences]);
+
+  // -----------------------------------------------------------------------
   // Filtered employees
   // -----------------------------------------------------------------------
   const filteredEmployees = useMemo(() => {
@@ -243,16 +290,12 @@ export function ShiftGrid({
     if (searchValue.trim()) {
       const q = searchValue.toLowerCase();
       result = result.filter(
-        (e) =>
-          e.firstName.toLowerCase().includes(q) ||
-          e.lastName.toLowerCase().includes(q),
+        (e) => e.firstName.toLowerCase().includes(q) || e.lastName.toLowerCase().includes(q)
       );
     }
 
     if (selectedQualification !== 'all') {
-      result = result.filter(
-        (e) => e.qualificationId === selectedQualification,
-      );
+      result = result.filter((e) => e.qualificationId === selectedQualification);
     }
 
     return result;
@@ -269,18 +312,18 @@ export function ShiftGrid({
       id: 'employee',
       accessorFn: (row) => `${row.lastName} ${row.firstName}`,
       header: () => (
-        <div className="flex items-center px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+        <div className="flex items-center px-2 py-1 text-xs font-semibold tracking-wide text-gray-600 uppercase">
           Dipendente
         </div>
       ),
       cell: ({ row }) => (
-        <div className="flex flex-col px-2 py-1 min-w-0">
-          <span className="text-sm font-medium text-gray-900 truncate">
+        <div className="flex min-w-0 flex-col px-2 py-1">
+          <span className="truncate text-sm font-medium text-gray-900">
             {row.original.lastName} {row.original.firstName}
           </span>
           {row.original.qualificationName && (
             <span
-              className="text-xs truncate"
+              className="truncate text-xs"
               style={{ color: row.original.qualificationColor ?? '#6B7280' }}
             >
               {row.original.qualificationName}
@@ -303,17 +346,17 @@ export function ShiftGrid({
           <div
             className={[
               'flex flex-col items-center justify-center py-1 text-center',
-              isToday ? 'text-blue-600 font-bold' : 'text-gray-600',
+              isToday ? 'font-bold text-blue-600' : 'text-gray-600',
             ].join(' ')}
           >
             {isCompact ? (
               <span className="text-xs leading-none">{format(day, 'd')}</span>
             ) : (
               <>
-                <span className="text-xs uppercase">
-                  {format(day, 'EEE', { locale: it })}
-                </span>
-                <span className={['text-sm font-semibold', isToday ? 'text-blue-600' : ''].join(' ')}>
+                <span className="text-xs uppercase">{format(day, 'EEE', { locale: it })}</span>
+                <span
+                  className={['text-sm font-semibold', isToday ? 'text-blue-600' : ''].join(' ')}
+                >
                   {format(day, 'd')}
                 </span>
               </>
@@ -323,16 +366,11 @@ export function ShiftGrid({
         cell: ({ row }) => {
           const shiftForCell = shiftMap.get(`${row.original.id}:${dateStr}`) ?? null;
           const absenceForCell = absenceMap.get(`${row.original.id}:${dateStr}`) ?? null;
-          // TODO TSK-006: calcola violazioni reali con il rules engine
-          const cellViolations: RuleViolation[] = [];
+          const cellViolations: RuleViolation[] =
+            violationMap.get(`${row.original.id}:${dateStr}`) ?? [];
 
           return (
-            <div
-              className={[
-                'h-full w-full p-0.5',
-                isWeekend ? 'bg-gray-50' : '',
-              ].join(' ')}
-            >
+            <div className={['h-full w-full p-0.5', isWeekend ? 'bg-gray-50' : ''].join(' ')}>
               <ShiftCell
                 userId={row.original.id}
                 date={dateStr}
@@ -352,15 +390,21 @@ export function ShiftGrid({
     });
 
     return [employeeCol, ...dayColumns];
-  }, [periodRange.days, shiftMap, absenceMap, shiftTypes, isCompact, dayColWidth, handleCellClick]);
+  }, [
+    periodRange.days,
+    shiftMap,
+    absenceMap,
+    violationMap,
+    shiftTypes,
+    isCompact,
+    dayColWidth,
+    handleCellClick,
+  ]);
 
   // -----------------------------------------------------------------------
   // Column pinning
   // -----------------------------------------------------------------------
-  const columnPinning: ColumnPinningState = useMemo(
-    () => ({ left: ['employee'] }),
-    [],
-  );
+  const columnPinning: ColumnPinningState = useMemo(() => ({ left: ['employee'] }), []);
 
   // -----------------------------------------------------------------------
   // TanStack Table
@@ -409,6 +453,36 @@ export function ShiftGrid({
   };
 
   // -----------------------------------------------------------------------
+  // ShiftEditor: turni e assenze dell'utente corrente (RB-01..09)
+  // -----------------------------------------------------------------------
+  const editorExistingShifts = useMemo<ExistingShift[]>(
+    () =>
+      shifts
+        .filter((s) => s.userId === editorState.userId && s.status !== 'cancelled')
+        .map((s) => ({
+          id: s.id,
+          userId: s.userId,
+          startDt: new Date(s.startDt),
+          endDt: new Date(s.endDt),
+        })),
+    [shifts, editorState.userId]
+  );
+
+  const editorAbsences = useMemo<Absence[]>(
+    () =>
+      absences
+        .filter((a) => a.userId === editorState.userId)
+        .map((a) => ({
+          id: a.id,
+          userId: a.userId,
+          startDate: a.startDate,
+          endDate: a.endDate,
+          status: 'approved',
+        })),
+    [absences, editorState.userId]
+  );
+
+  // -----------------------------------------------------------------------
   // Sticky column left offset per column pinning
   // -----------------------------------------------------------------------
   function getPinnedLeft(colId: string): number | undefined {
@@ -445,10 +519,7 @@ export function ShiftGrid({
 
       {/* Errore */}
       {(weekQuery.isError || monthQuery.isError) && (
-        <div
-          className="rounded-md bg-red-50 px-4 py-2 text-sm text-red-600"
-          role="alert"
-        >
+        <div className="rounded-md bg-red-50 px-4 py-2 text-sm text-red-600" role="alert">
           Errore nel caricamento dei turni. Riprova.
         </div>
       )}
@@ -494,17 +565,12 @@ export function ShiftGrid({
                       style={{
                         width: header.getSize(),
                         minWidth: header.getSize(),
-                        left: isPinned === 'left'
-                          ? getPinnedLeft(header.id)
-                          : undefined,
+                        left: isPinned === 'left' ? getPinnedLeft(header.id) : undefined,
                       }}
                     >
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   );
                 })}
@@ -556,16 +622,11 @@ export function ShiftGrid({
                         style={{
                           width: cell.column.getSize(),
                           minWidth: cell.column.getSize(),
-                          left: isPinned === 'left'
-                            ? getPinnedLeft(cell.column.id)
-                            : undefined,
+                          left: isPinned === 'left' ? getPinnedLeft(cell.column.id) : undefined,
                           height: `${virtualRow.size}px`,
                         }}
                       >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     );
                   })}
@@ -586,13 +647,13 @@ export function ShiftGrid({
       {/* Shift Editor Modal */}
       <ShiftEditor
         open={editorState.open}
-        onOpenChange={(open) =>
-          setEditorState((prev) => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setEditorState((prev) => ({ ...prev, open }))}
         userId={editorState.userId}
         date={editorState.date}
         shift={editorState.shift}
         shiftTypes={shiftTypes}
+        existingShifts={editorExistingShifts}
+        absences={editorAbsences}
       />
     </div>
   );

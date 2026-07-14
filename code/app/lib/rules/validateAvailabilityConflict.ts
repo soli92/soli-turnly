@@ -7,7 +7,7 @@
  *
  * Pure function — nessun side effect, nessuna chiamata DB.
  */
-import { format, isWithinInterval, parseISO, startOfDay } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 import type { AvailabilityEntry, ShiftInput, ValidationResult } from './types';
 import { emptyResult } from './types';
 
@@ -19,15 +19,13 @@ import { emptyResult } from './types';
  */
 export function validateAvailabilityConflict(
   input: ShiftInput,
-  availability: AvailabilityEntry[],
+  availability: AvailabilityEntry[]
 ): ValidationResult {
   const result = emptyResult();
 
   const shiftDay = format(startOfDay(input.startDt), 'yyyy-MM-dd');
 
-  const userEntries = availability.filter(
-    (a) => a.userId === input.userId && a.date === shiftDay,
-  );
+  const userEntries = availability.filter((a) => a.userId === input.userId && a.date === shiftDay);
 
   for (const entry of userEntries) {
     if (entry.allDay) {
@@ -45,8 +43,7 @@ export function validateAvailabilityConflict(
       const unavailStart = parseISO(`${entry.date}T${entry.unavailableFrom}:00`);
       const unavailEnd = parseISO(`${entry.date}T${entry.unavailableTo}:00`);
 
-      const shiftOverlaps =
-        input.startDt < unavailEnd && input.endDt > unavailStart;
+      const shiftOverlaps = input.startDt < unavailEnd && input.endDt > unavailStart;
 
       if (shiftOverlaps) {
         result.warnings.push({

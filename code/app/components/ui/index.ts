@@ -31,12 +31,7 @@ export {
 } from './dialog';
 
 // Tooltip (TSK-005)
-export {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from './tooltip';
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 
 // AlertDialog (TSK-005)
 export {
@@ -91,13 +86,15 @@ export {
   useFormField,
 } from './form';
 
+// Skeleton (TSK-014)
+export { Skeleton } from './skeleton';
+
 // Componenti in arrivo (TSK-008):
 // export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
 // export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 // export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./dropdown-menu";
 // export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 // export { Toast, ToastAction, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from "./toast";
-// export { Skeleton } from "./skeleton";
 // export { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 // export { Calendar } from "./calendar";
 // export { Popover, PopoverContent, PopoverTrigger } from "./popover";

@@ -70,9 +70,9 @@ export function MatrixFilters({
       aria-label="Filtri griglia turni"
     >
       {/* Search dipendente */}
-      <div className="relative flex-1 min-w-[180px] max-w-xs">
+      <div className="relative max-w-xs min-w-[180px] flex-1">
         <Search
-          className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400"
           aria-hidden="true"
         />
         <Input
@@ -89,10 +89,7 @@ export function MatrixFilters({
 
       {/* Filtro qualifica */}
       <div className="w-[180px]">
-        <Select
-          value={selectedQualification}
-          onValueChange={onQualificationChange}
-        >
+        <Select value={selectedQualification} onValueChange={onQualificationChange}>
           <SelectTrigger
             aria-label="Filtra per qualifica"
             data-testid="matrix-qualification-filter"
@@ -115,7 +112,7 @@ export function MatrixFilters({
 
       {/* Toggle settimana / mese */}
       <div
-        className="flex rounded-md border border-gray-200 overflow-hidden"
+        className="flex overflow-hidden rounded-md border border-gray-200"
         role="group"
         aria-label="Seleziona vista"
       >
@@ -142,11 +139,7 @@ export function MatrixFilters({
       </div>
 
       {/* Navigazione settimana/mese */}
-      <WeekNavigator
-        currentDate={currentDate}
-        viewMode={viewMode}
-        onNavigate={onNavigate}
-      />
+      <WeekNavigator currentDate={currentDate} viewMode={viewMode} onNavigate={onNavigate} />
     </div>
   );
 }

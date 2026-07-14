@@ -77,28 +77,23 @@ import type { ExistingShift, Absence } from '@/lib/rules/types';
 const shiftFormSchema = z
   .object({
     shiftTypeId: z.string().uuid('UUID non valido').optional().nullable(),
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato data non valido (YYYY-MM-DD)'),
-    startTime: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/, 'Formato HH:MM richiesto'),
-    endTime: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/, 'Formato HH:MM richiesto'),
-    notes: z
-      .string()
-      .max(500, 'Note troppo lunghe (max 500 caratteri)')
-      .optional()
-      .nullable(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato data non valido (YYYY-MM-DD)'),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM richiesto'),
+    endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM richiesto'),
+    notes: z.string().max(500, 'Note troppo lunghe (max 500 caratteri)').optional().nullable(),
   })
   .refine(
     (d) => {
-      const [sh, sm] = d.startTime.split(':').map(Number);
-      const [eh, em] = d.endTime.split(':').map(Number);
+      // noUncheckedIndexedAccess: i valori esistono per costruzione del pattern HH:MM
+      const parts = d.startTime.split(':').map(Number);
+      const eparts = d.endTime.split(':').map(Number);
+      const sh = parts[0]!;
+      const sm = parts[1]!;
+      const eh = eparts[0]!;
+      const em = eparts[1]!;
       return sh * 60 + sm < eh * 60 + em;
     },
-    { message: "L'orario di inizio deve precedere l'orario di fine", path: ['endTime'] },
+    { message: "L'orario di inizio deve precedere l'orario di fine", path: ['endTime'] }
   );
 
 type ShiftFormValues = z.infer<typeof shiftFormSchema>;
@@ -112,7 +107,7 @@ function runLocalValidation(
   userId: string,
   existingShifts: ExistingShift[],
   absences: Absence[],
-  editingId?: string,
+  editingId?: string
 ): { blocking: RuleViolation[]; warnings: RuleViolation[] } {
   if (!data.startTime || !data.endTime || !data.date) return { blocking: [], warnings: [] };
   const startDt = new Date(`${data.date}T${data.startTime}:00`);
@@ -120,7 +115,7 @@ function runLocalValidation(
   if (isNaN(startDt.getTime()) || isNaN(endDt.getTime())) return { blocking: [], warnings: [] };
   const result = validateShift(
     { userId, startDt, endDt, id: editingId },
-    { existingShifts, absences },
+    { existingShifts, absences }
   );
   return { blocking: result.blocking, warnings: result.warnings };
 }
@@ -175,16 +170,11 @@ export function ShiftEditor({
   const updateShift = useUpdateShift();
   const deleteShift = useDeleteShift();
 
-  const isPending =
-    createShift.isPending || updateShift.isPending || deleteShift.isPending;
+  const isPending = createShift.isPending || updateShift.isPending || deleteShift.isPending;
 
   // Deriva orario iniziale da ISO string (es. "2024-07-01T08:00:00.000Z" → "08:00")
-  const initialStartTime = shift
-    ? format(new Date(shift.startDt), 'HH:mm')
-    : '';
-  const initialEndTime = shift
-    ? format(new Date(shift.endDt), 'HH:mm')
-    : '';
+  const initialStartTime = shift ? format(new Date(shift.startDt), 'HH:mm') : '';
+  const initialEndTime = shift ? format(new Date(shift.endDt), 'HH:mm') : '';
 
   const form = useForm<ShiftFormValues>({
     resolver: zodResolver(shiftFormSchema),
@@ -215,7 +205,7 @@ export function ShiftEditor({
     userId,
     existingShifts,
     absences,
-    shift?.id ?? undefined,
+    shift?.id ?? undefined
   );
   const hasBlockingViolations = blocking.length > 0;
   const hasWarnings = warnings.length > 0;
@@ -283,37 +273,26 @@ export function ShiftEditor({
         aria-describedby="shift-editor-description"
       >
         <DialogHeader>
-          <DialogTitle>
-            {isEditMode ? 'Modifica turno' : 'Nuovo turno'}
-          </DialogTitle>
+          <DialogTitle>{isEditMode ? 'Modifica turno' : 'Nuovo turno'}</DialogTitle>
           <DialogDescription id="shift-editor-description">
-            {isEditMode
-              ? `Modifica il turno del ${date}`
-              : `Assegna un turno per il ${date}`}
+            {isEditMode ? `Modifica il turno del ${date}` : `Assegna un turno per il ${date}`}
           </DialogDescription>
         </DialogHeader>
 
         <form
-          onSubmit={form.handleSubmit((data) => handleSubmit(data))}
+          onSubmit={(e) => void form.handleSubmit((data) => handleSubmit(data))(e)}
           className="space-y-4"
           noValidate
         >
           {/* Tipologia turno */}
           <div className="space-y-1.5">
-            <label
-              htmlFor="shiftTypeId"
-              className="text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="shiftTypeId" className="text-sm font-medium text-gray-700">
               Tipologia turno
             </label>
             <Select
               value={form.watch('shiftTypeId') ?? '__none__'}
               onValueChange={(v) =>
-                form.setValue(
-                  'shiftTypeId',
-                  v === '__none__' ? null : v,
-                  { shouldValidate: true },
-                )
+                form.setValue('shiftTypeId', v === '__none__' ? null : v, { shouldValidate: true })
               }
             >
               <SelectTrigger
@@ -344,10 +323,7 @@ export function ShiftEditor({
           {/* Orario inizio */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label
-                htmlFor="startTime"
-                className="text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="startTime" className="text-sm font-medium text-gray-700">
                 Inizio <span aria-hidden="true">*</span>
               </label>
               <Input
@@ -355,20 +331,12 @@ export function ShiftEditor({
                 type="time"
                 aria-required="true"
                 aria-invalid={!!form.formState.errors.startTime}
-                aria-describedby={
-                  form.formState.errors.startTime
-                    ? 'startTime-error'
-                    : undefined
-                }
+                aria-describedby={form.formState.errors.startTime ? 'startTime-error' : undefined}
                 data-testid="shift-editor-start-time"
                 {...form.register('startTime')}
               />
               {form.formState.errors.startTime && (
-                <p
-                  id="startTime-error"
-                  className="text-xs text-red-600"
-                  role="alert"
-                >
+                <p id="startTime-error" className="text-xs text-red-600" role="alert">
                   {form.formState.errors.startTime.message}
                 </p>
               )}
@@ -376,10 +344,7 @@ export function ShiftEditor({
 
             {/* Orario fine */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="endTime"
-                className="text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="endTime" className="text-sm font-medium text-gray-700">
                 Fine <span aria-hidden="true">*</span>
               </label>
               <Input
@@ -387,18 +352,12 @@ export function ShiftEditor({
                 type="time"
                 aria-required="true"
                 aria-invalid={!!form.formState.errors.endTime}
-                aria-describedby={
-                  form.formState.errors.endTime ? 'endTime-error' : undefined
-                }
+                aria-describedby={form.formState.errors.endTime ? 'endTime-error' : undefined}
                 data-testid="shift-editor-end-time"
                 {...form.register('endTime')}
               />
               {form.formState.errors.endTime && (
-                <p
-                  id="endTime-error"
-                  className="text-xs text-red-600"
-                  role="alert"
-                >
+                <p id="endTime-error" className="text-xs text-red-600" role="alert">
                   {form.formState.errors.endTime.message}
                 </p>
               )}
@@ -407,10 +366,7 @@ export function ShiftEditor({
 
           {/* Note */}
           <div className="space-y-1.5">
-            <label
-              htmlFor="notes"
-              className="text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="notes" className="text-sm font-medium text-gray-700">
               Note
             </label>
             <Textarea
@@ -434,17 +390,16 @@ export function ShiftEditor({
               className={[
                 'rounded-md px-3 py-2 text-xs',
                 hasBlockingViolations
-                  ? 'bg-red-50 text-red-700 border border-red-200'
-                  : 'bg-amber-50 text-amber-700 border border-amber-200',
+                  ? 'border border-red-200 bg-red-50 text-red-700'
+                  : 'border border-amber-200 bg-amber-50 text-amber-700',
               ].join(' ')}
               role="alert"
               aria-live="polite"
             >
-              <ul className="space-y-0.5 list-disc list-inside">
+              <ul className="list-inside list-disc space-y-0.5">
                 {allViolations.map((v) => (
                   <li key={v.ruleId}>
-                    <span className="font-semibold">{v.ruleId}:</span>{' '}
-                    {v.message}
+                    <span className="font-semibold">{v.ruleId}:</span> {v.message}
                   </li>
                 ))}
               </ul>
@@ -465,7 +420,7 @@ export function ShiftEditor({
                 type="button"
                 variant="destructive"
                 size="sm"
-                onClick={handleDelete}
+                onClick={() => void handleDelete()}
                 disabled={isPending}
                 className="mr-auto"
                 aria-label="Elimina turno"
@@ -507,21 +462,16 @@ export function ShiftEditor({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Conferma salvataggio con avvisi</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Sono presenti {warnings.length}{' '}
-                      {warnings.length === 1 ? 'avviso' : 'avvisi'} su questo turno.
-                      Vuoi salvare comunque?
+                      Sono presenti {warnings.length} {warnings.length === 1 ? 'avviso' : 'avvisi'}{' '}
+                      su questo turno. Vuoi salvare comunque?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <ul className="my-2 space-y-1 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
                     {warnings.map((v) => (
                       <li key={v.ruleId} className="flex items-start gap-1">
-                        <ViolationBadge
-                          violations={[v]}
-                          severity="warning"
-                        />
+                        <ViolationBadge violations={[v]} severity="warning" />
                         <span>
-                          <span className="font-semibold">{v.ruleId}:</span>{' '}
-                          {v.message}
+                          <span className="font-semibold">{v.ruleId}:</span> {v.message}
                         </span>
                       </li>
                     ))}
@@ -529,11 +479,7 @@ export function ShiftEditor({
                   <AlertDialogFooter>
                     <AlertDialogCancel>Annulla</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() =>
-                        form.handleSubmit((data) =>
-                          handleSubmit(data, true),
-                        )()
-                      }
+                      onClick={() => void form.handleSubmit((data) => handleSubmit(data, true))()}
                       data-testid="shift-editor-confirm-save-btn"
                     >
                       Salva comunque

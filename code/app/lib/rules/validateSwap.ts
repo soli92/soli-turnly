@@ -13,7 +13,8 @@ import { validateMinRest } from './validateMinRest';
 import { validateWeeklyRest } from './validateWeeklyRest';
 import { validateConsecutiveDays } from './validateConsecutiveDays';
 import { validateWeeklyHours } from './validateWeeklyHours';
-import { validateCoverage } from './validateCoverage';
+// NOTE: validateCoverage rimossa — non usata in questa implementazione (richiede CoverageRequirement context).
+// import { validateCoverage } from './validateCoverage';
 import { validateNoShiftOnAbsence } from './validateNoShiftOnAbsence';
 import { validatePastShift } from './validatePastShift';
 
@@ -39,13 +40,7 @@ export interface SwapInput {
  * Dopo lo swap: shiftA.userId diventa shiftB.userId e viceversa.
  */
 export function validateSwap(input: SwapInput): ValidationResult {
-  const {
-    shiftA,
-    shiftB,
-    allShifts,
-    absences,
-    now = new Date(),
-  } = input;
+  const { shiftA, shiftB, allShifts, absences, now = new Date() } = input;
 
   // Costruisce gli "input" risultanti dallo swap
   const inputAtoB = {
@@ -63,19 +58,11 @@ export function validateSwap(input: SwapInput): ValidationResult {
   };
 
   // Existing shifts escludono i due turni scambiati (verranno rimpiazzati)
-  const existingExcludingSwap = allShifts.filter(
-    (s) => s.id !== shiftA.id && s.id !== shiftB.id,
-  );
+  const existingExcludingSwap = allShifts.filter((s) => s.id !== shiftA.id && s.id !== shiftB.id);
 
   // Aggiunge il turno "ospite" agli existing per la validazione incrociata
-  const existingForA = [
-    ...existingExcludingSwap,
-    { ...shiftA, userId: shiftB.userId },
-  ];
-  const existingForB = [
-    ...existingExcludingSwap,
-    { ...shiftB, userId: shiftA.userId },
-  ];
+  const existingForA = [...existingExcludingSwap, { ...shiftA, userId: shiftB.userId }];
+  const existingForB = [...existingExcludingSwap, { ...shiftB, userId: shiftA.userId }];
 
   let result = emptyResult();
 

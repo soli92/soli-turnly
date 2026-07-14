@@ -43,7 +43,7 @@ describe('calculateShiftDurationMinutes (RB-12)', () => {
       // 08:00 CEST = 06:00 UTC (UTC+2 dopo il cambio ora)
       // L'ora 02:00-03:00 viene saltata → durata fisica 6h = 360 min
       const start = new Date('2025-03-30T00:00:00Z'); // 01:00 CET
-      const end = new Date('2025-03-30T06:00:00Z');   // 08:00 CEST
+      const end = new Date('2025-03-30T06:00:00Z'); // 08:00 CEST
 
       expect(calculateShiftDurationMinutes(start, end)).toBe(360);
     });
@@ -55,7 +55,7 @@ describe('calculateShiftDurationMinutes (RB-12)', () => {
       // 09:00 CET (UTC+1)  = 26 Oct 08:00 UTC
       // Il cambio ora aggiunge 1h → durata fisica 9h = 540 min
       const start = new Date('2025-10-25T23:00:00Z'); // 01:00 CEST
-      const end = new Date('2025-10-26T08:00:00Z');   // 09:00 CET
+      const end = new Date('2025-10-26T08:00:00Z'); // 09:00 CET
 
       expect(calculateShiftDurationMinutes(start, end)).toBe(540);
     });

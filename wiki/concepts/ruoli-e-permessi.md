@@ -78,3 +78,14 @@ Tentativo di modifica dei campi riservati da parte del dipendente (UI o API) →
 errore di validazione; il valore non cambia. Vedi [[regole-di-business]] RB-13 e test T-SEC-05.
 
 [^src: raw/turnly-documento-funzionale.md §4 Modello dati — Utente]
+
+---
+
+## Storie collegate
+
+| EP | Storie | Relazione |
+|---|---|---|
+| [EP-001](../management/kanban/EP-001-autenticazione-ruoli/EP-001.md) | US-001, US-002 | Login, logout, protezione endpoint per ruolo |
+| [EP-002](../management/kanban/EP-002-anagrafica-dipendenti-qualifiche/EP-002.md) | US-003 | Gestione campi contrattuali riservati all'admin (RB-13) |
+| [EP-011](../management/kanban/EP-011-calendario-profilo-dipendente/EP-011.md) | US-016 | Self-service dipendente su campi consentiti |
+| [EP-012](../management/kanban/EP-012-richieste-dipendente-workflow/EP-012.md) | US-018, US-019, US-020 | Separazione ruoli nel workflow richieste |

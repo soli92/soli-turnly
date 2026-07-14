@@ -37,9 +37,7 @@ import { requireAuthOrUnauthorized } from '@/lib/auth';
 
 const changePasswordSchema = z.object({
   oldPassword: z.string().min(1, 'La vecchia password è obbligatoria'),
-  newPassword: z
-    .string()
-    .min(8, 'La nuova password deve essere di almeno 8 caratteri'),
+  newPassword: z.string().min(8, 'La nuova password deve essere di almeno 8 caratteri'),
 });
 
 // ----------------------------------------------------------------
@@ -57,26 +55,24 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json(
-      { error: 'body JSON non valido' },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'body JSON non valido' }, { status: 400 });
   }
 
   const parsed = changePasswordSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'dati non validi', details: parsed.error.flatten() },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   const { oldPassword, newPassword } = parsed.data;
 
   // Recupera utente corrente dal DB (TSK-002 popola la tabella users)
+  // session.user.id è ora tipizzato come string (types/next-auth.d.ts — Fix H2)
   const userId = session.user.id;
   const user = await db.query.users.findFirst({
-    where: eq(users.id, userId as string),
+    where: eq(users.id, userId),
   });
 
   if (!user) {
@@ -87,23 +83,20 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   // Verifica vecchia password
   const isOldPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
   if (!isOldPasswordValid) {
-    return NextResponse.json(
-      { error: 'la vecchia password non è corretta' },
-      { status: 422 },
-    );
+    return NextResponse.json({ error: 'la vecchia password non è corretta' }, { status: 422 });
   }
 
   // Hash nuova password (rounds = 12 — bilanciamento sicurezza/performance)
   const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
   // Aggiornamento DB
+  // Fix H3: la tabella users non ha updated_at — rimosso updatedAt dal .set().
   await db
     .update(users)
     .set({
       passwordHash: newPasswordHash,
-      updatedAt: new Date(),
     })
-    .where(eq(users.id, userId as string));
+    .where(eq(users.id, userId));
 
   return NextResponse.json({ message: 'password aggiornata' }, { status: 200 });
 }

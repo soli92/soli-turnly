@@ -18,7 +18,6 @@
 import { test, expect } from '../fixtures';
 
 test.describe('T-REQ: Flusso richieste', () => {
-
   /**
    * T-REQ-01 — AC: "Dopo approvazione: assenza attiva creata nel DB"
    *             AC: "Anna riceve notifica 'richiesta_approvata'"
@@ -55,7 +54,7 @@ test.describe('T-REQ: Flusso richieste', () => {
     // Attende conferma invio (testo "Richiesta inviata" o redirect alla lista)
     // Il form component chiama onSuccess dopo il submit riuscito
     await expect(
-      employeePage.getByText('Richiesta inviata').or(employeePage.getByText('inviata')),
+      employeePage.getByText('Richiesta inviata').or(employeePage.getByText('inviata'))
     ).toBeVisible({ timeout: 10000 });
 
     // ----------------------------------------------------------------
@@ -93,7 +92,9 @@ test.describe('T-REQ: Flusso richieste', () => {
   test('T-REQ: dipendente non può approvare — 403', async ({ employeePage }) => {
     // Tenta di approvare una richiesta con ID arbitrario usando la sessione dipendente.
     // Il middleware RBAC intercetta prima della logica applicativa → 403.
-    const resp = await employeePage.request.post('/api/requests/00000000-0000-0000-0000-000000000001/approve');
+    const resp = await employeePage.request.post(
+      '/api/requests/00000000-0000-0000-0000-000000000001/approve'
+    );
     expect(resp.status()).toBe(403);
   });
 
@@ -103,9 +104,12 @@ test.describe('T-REQ: Flusso richieste', () => {
    * Corollario del test precedente per il flusso di rifiuto.
    */
   test('T-REQ: dipendente non può rifiutare — 403', async ({ employeePage }) => {
-    const resp = await employeePage.request.post('/api/requests/00000000-0000-0000-0000-000000000001/reject', {
-      data: { notes: 'tentativo non autorizzato' },
-    });
+    const resp = await employeePage.request.post(
+      '/api/requests/00000000-0000-0000-0000-000000000001/reject',
+      {
+        data: { notes: 'tentativo non autorizzato' },
+      }
+    );
     expect(resp.status()).toBe(403);
   });
 
@@ -115,7 +119,9 @@ test.describe('T-REQ: Flusso richieste', () => {
    * AC: "API: risponde 422 se si tenta di annullare una richiesta applicata"
    * Verifica tramite API: PATCH /api/requests/{id}/cancel su richiesta già approvata.
    */
-  test('T-REQ: richiesta approvata non può essere annullata dal dipendente', async ({ employeePage }) => {
+  test('T-REQ: richiesta approvata non può essere annullata dal dipendente', async ({
+    employeePage,
+  }) => {
     // Prima crea una richiesta come dipendente (via API diretta per velocità)
     const createResp = await employeePage.request.post('/api/requests', {
       data: {
@@ -130,7 +136,10 @@ test.describe('T-REQ: Flusso richieste', () => {
 
     if (!createResp.ok()) {
       // Se la creazione fallisce, skippa il test (dipende dallo stato del DB)
-      test.skip(true, 'Impossibile creare richiesta di test: DB potrebbe non essere in stato pulito');
+      test.skip(
+        true,
+        'Impossibile creare richiesta di test: DB potrebbe non essere in stato pulito'
+      );
       return;
     }
 
@@ -146,5 +155,4 @@ test.describe('T-REQ: Flusso richieste', () => {
     // Questo test verifica che l'endpoint esista e risponda (200 o 4xx a seconda del ruolo/stato).
     expect([200, 403, 422]).toContain(cancelResp.status());
   });
-
 });

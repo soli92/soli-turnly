@@ -45,6 +45,8 @@ export async function GET(req: Request): Promise<Response> {
       lastName: users.lastName,
       qualificationId: users.qualificationId,
       contractHours: users.contractHours,
+      phone: users.phone,
+      contractType: users.contractType,
       active: users.active,
       createdAt: users.createdAt,
     })
@@ -92,6 +94,8 @@ export async function POST(req: Request): Promise<Response> {
       lastName: users.lastName,
       qualificationId: users.qualificationId,
       contractHours: users.contractHours,
+      phone: users.phone,
+      contractType: users.contractType,
       active: users.active,
       createdAt: users.createdAt,
     });

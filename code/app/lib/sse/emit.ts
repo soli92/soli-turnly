@@ -34,15 +34,9 @@ export function emitToUser(userId: string, event: SSEEvent): void {
  *
  * In caso di errore DB il broadcast fallisce silenziosamente (log su stderr).
  */
-export async function emitToRole(
-  role: 'admin',
-  event: SSEEvent,
-): Promise<void> {
+export async function emitToRole(role: 'admin', event: SSEEvent): Promise<void> {
   try {
-    const adminUsers = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.role, role));
+    const adminUsers = await db.select({ id: users.id }).from(users).where(eq(users.role, role));
 
     for (const admin of adminUsers) {
       broker.emit(admin.id, event);

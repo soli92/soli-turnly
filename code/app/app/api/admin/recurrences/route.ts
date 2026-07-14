@@ -29,9 +29,7 @@ const recurrenceCreateSchema = z
   .object({
     userId: z.string().uuid('userId: UUID non valido'),
     shiftTypeId: z.string().uuid('shiftTypeId: UUID non valido'),
-    startDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate: formato YYYY-MM-DD atteso'),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate: formato YYYY-MM-DD atteso'),
     endDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate: formato YYYY-MM-DD atteso')
@@ -42,10 +40,10 @@ const recurrenceCreateSchema = z
       .array(z.number().int().min(0).max(6))
       .min(1, 'daysOfWeek deve contenere almeno un giorno'),
   })
-  .refine(
-    (d) => !d.endDate || d.startDate <= d.endDate,
-    { message: 'endDate deve essere successiva a startDate', path: ['endDate'] },
-  );
+  .refine((d) => !d.endDate || d.startDate <= d.endDate, {
+    message: 'endDate deve essere successiva a startDate',
+    path: ['endDate'],
+  });
 
 type RecurrenceCreateInput = z.infer<typeof recurrenceCreateSchema>;
 
@@ -82,7 +80,7 @@ export async function GET(req: Request): Promise<Response> {
         }
         if (filters.length === 0) return undefined;
         return and(...(filters as Parameters<typeof and>));
-      })(),
+      })()
     )
     .limit(limit)
     .offset(offset);

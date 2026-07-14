@@ -19,7 +19,6 @@
 import { test, expect } from '../fixtures';
 
 test.describe('T-SEC: RBAC e sicurezza', () => {
-
   /**
    * T-SEC-01 — AC: "API GET con userId altrui: filtra automaticamente per session.user.id"
    *
@@ -28,7 +27,9 @@ test.describe('T-SEC: RBAC e sicurezza', () => {
    * → per non-admin, il parametro userId viene ignorato; si usano solo i propri turni.
    * → La risposta è 200 (non 403), ma i dati non contengono turni altrui.
    */
-  test('T-SEC-01: dipendente non vede turni altrui via API (filtro automatico)', async ({ employeePage }) => {
+  test('T-SEC-01: dipendente non vede turni altrui via API (filtro automatico)', async ({
+    employeePage,
+  }) => {
     // Usa un UUID che presumibilmente NON corrisponde a mario.rossi (sessione corrente)
     const otherUserId = '00000000-0000-0000-0000-000000000001';
     const resp = await employeePage.request.get(`/api/shifts?userId=${otherUserId}`);
@@ -52,7 +53,10 @@ test.describe('T-SEC: RBAC e sicurezza', () => {
    * Recupera l'ID dell'admin via endpoint e verifica che i turni restituiti
    * non appartengano all'admin.
    */
-  test('T-SEC-01b: dipendente non vede turni dell\'admin via API', async ({ adminPage, employeePage }) => {
+  test("T-SEC-01b: dipendente non vede turni dell'admin via API", async ({
+    adminPage,
+    employeePage,
+  }) => {
     // Recupera l'ID dell'admin tramite la sua sessione autenticata
     const meResp = await adminPage.request.get('/api/users/me');
     await expect(meResp).toBeOK();
@@ -160,7 +164,9 @@ test.describe('T-SEC: RBAC e sicurezza', () => {
    * Solo l'admin può approvare richieste (API /api/requests/{id}/approve, POST).
    */
   test('T-SEC-05: POST approve con sessione dipendente → 403', async ({ employeePage }) => {
-    const resp = await employeePage.request.post('/api/requests/00000000-0000-0000-0000-000000000001/approve');
+    const resp = await employeePage.request.post(
+      '/api/requests/00000000-0000-0000-0000-000000000001/approve'
+    );
     expect(resp.status()).toBe(403);
   });
 
@@ -189,5 +195,4 @@ test.describe('T-SEC: RBAC e sicurezza', () => {
     });
     expect(resp.status()).toBe(403);
   });
-
 });

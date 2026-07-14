@@ -26,11 +26,7 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<Respo
 
   const { id } = await params;
 
-  const [shiftType] = await db
-    .select()
-    .from(shiftTypes)
-    .where(eq(shiftTypes.id, id))
-    .limit(1);
+  const [shiftType] = await db.select().from(shiftTypes).where(eq(shiftTypes.id, id)).limit(1);
 
   if (!shiftType) return ApiResponse.notFound('Tipo turno non trovato');
 
@@ -49,11 +45,7 @@ export async function PATCH(req: Request, { params }: RouteParams): Promise<Resp
 
   const { id } = await params;
 
-  const [existing] = await db
-    .select()
-    .from(shiftTypes)
-    .where(eq(shiftTypes.id, id))
-    .limit(1);
+  const [existing] = await db.select().from(shiftTypes).where(eq(shiftTypes.id, id)).limit(1);
 
   if (!existing) return ApiResponse.notFound('Tipo turno non trovato');
 
@@ -99,11 +91,7 @@ export async function DELETE(req: Request, { params }: RouteParams): Promise<Res
 
   const { id } = await params;
 
-  const [existing] = await db
-    .select()
-    .from(shiftTypes)
-    .where(eq(shiftTypes.id, id))
-    .limit(1);
+  const [existing] = await db.select().from(shiftTypes).where(eq(shiftTypes.id, id)).limit(1);
 
   if (!existing) return ApiResponse.notFound('Tipo turno non trovato');
 

@@ -11,11 +11,7 @@ import type { ValidationResult } from './types';
 import { emptyResult } from './types';
 
 /** Campi del profilo utente che solo un admin può modificare. */
-const ADMIN_ONLY_FIELDS: readonly string[] = [
-  'qualificationId',
-  'contractHours',
-  'role',
-];
+const ADMIN_ONLY_FIELDS: readonly string[] = ['qualificationId', 'contractHours', 'role'];
 
 /**
  * Verifica che un utente non-admin non tenti di modificare campi riservati.
@@ -23,10 +19,7 @@ const ADMIN_ONLY_FIELDS: readonly string[] = [
  * @param patchFields - Chiavi del payload PATCH (es. Object.keys(req.body)).
  * @param userRole    - Ruolo dell'utente che effettua la richiesta.
  */
-export function validateContractFields(
-  patchFields: string[],
-  userRole: string,
-): ValidationResult {
+export function validateContractFields(patchFields: string[], userRole: string): ValidationResult {
   const result = emptyResult();
 
   if (userRole === 'admin') {

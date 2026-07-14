@@ -225,3 +225,19 @@ Requisiti correlati: [[requisiti-funzionali]] RF-L CA2.
 | F7 Richiesta scambio | decide | inizia | accetta/rifiuta |
 | F8 Richiesta nuovo turno/modifica | decide | inizia | — |
 | F9 Gestione disponibilità | consulta in matrice | inizia e chiude | — |
+
+---
+
+## Storie collegate
+
+| Flusso | EP | Storie |
+|---|---|---|
+| F1 Pianificazione settimanale | [EP-004](../management/kanban/EP-004-matrice-turni-admin/EP-004.md) | US-006, US-007 |
+| F2 Generazione ciclo | [EP-005](../management/kanban/EP-005-ricorrenze-cicli-rotativi/EP-005.md) | US-008, US-009 |
+| F3 Swap admin | [EP-006](../management/kanban/EP-006-scambio-turni-admin/EP-006.md) | US-010 |
+| F4 Gestione assenza admin | [EP-007](../management/kanban/EP-007-gestione-assenze-admin/EP-007.md) | US-011 |
+| F5 Consultazione dipendente | [EP-011](../management/kanban/EP-011-calendario-profilo-dipendente/EP-011.md) | US-015 |
+| F6 Richiesta assenza | [EP-012](../management/kanban/EP-012-richieste-dipendente-workflow/EP-012.md) | US-018, US-020 |
+| F7 Richiesta scambio | [EP-012](../management/kanban/EP-012-richieste-dipendente-workflow/EP-012.md) | US-018, US-019, US-020 |
+| F8 Richiesta nuovo turno/modifica | [EP-012](../management/kanban/EP-012-richieste-dipendente-workflow/EP-012.md) | US-018, US-020 |
+| F9 Gestione disponibilità | [EP-011](../management/kanban/EP-011-calendario-profilo-dipendente/EP-011.md) | US-017 |

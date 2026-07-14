@@ -23,6 +23,8 @@ export type AuditAction =
   | 'shift.create'
   | 'shift.update'
   | 'shift.delete'
+  | 'shift.delete_for_absence' // TSK-017: turno annullato per conflitto assenza
+  | 'shift.reassign_for_absence' // TSK-017: turno riassegnato per conflitto assenza
   | 'shift_type.create'
   | 'shift_type.update'
   | 'shift_type.delete'
@@ -43,7 +45,8 @@ export type AuditAction =
   | 'swap.accept'
   | 'swap.admin'
   | 'coverage.create'
-  | 'notification.read';
+  | 'notification.read'
+  | 'notification.read_all';
 
 export interface AuditLogEntry {
   /** ID dell'utente che ha eseguito l'azione (actorId). */
@@ -59,9 +62,10 @@ export interface AuditLogEntry {
   /** Stato successivo dell'entità (serializzabile). */
   after?: unknown;
   /** IP del client (estratto dalla Request nell'handler). */
-  ip?: string;
+  // NOTE: `string | undefined` è esplicito per compatibilità con exactOptionalPropertyTypes.
+  ip?: string | undefined;
   /** User-Agent del client. */
-  userAgent?: string;
+  userAgent?: string | undefined;
 }
 
 // =============================================================

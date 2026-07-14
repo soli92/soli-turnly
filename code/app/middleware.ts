@@ -12,10 +12,18 @@
  * - RF-A CA2: verifica ruolo su ogni request
  * - RF-A CA3: token scaduto → req.auth è null → redirect /login / 401 API
  * - Audit log su write: implementato in TSK-010 come middleware applicativo separato
+ *
+ * Fix H1 — Edge compatibility:
+ * Importa da auth.config.ts (edge-safe) invece di auth.ts che trascina
+ * @/db (postgres-js) e bcrypt nel bundle Edge.
+ * Ref: https://authjs.dev/guides/edge-compatibility
  */
 
-import { auth } from '@/auth';
+import NextAuth from 'next-auth';
+import { authConfig } from '@/auth.config';
 import { NextResponse } from 'next/server';
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -23,10 +31,18 @@ export default auth((req) => {
   const isAuthenticated = !!req.auth;
 
   // ----------------------------------------------------------------
-  // Rotte pubbliche: /login, /api/auth/*
-  // Se già autenticato, redirect al dashboard di ruolo.
+  // Rotte Auth.js (/api/auth/*): sempre pass-through, anche da autenticati.
+  // Il SessionProvider chiama /api/auth/session dopo il login — non va
+  // reindirizzato al dashboard o riceve HTML invece di JSON.
   // ----------------------------------------------------------------
-  if (pathname.startsWith('/login') || pathname.startsWith('/api/auth')) {
+  if (pathname.startsWith('/api/auth')) {
+    return NextResponse.next();
+  }
+
+  // ----------------------------------------------------------------
+  // Pagina di login: se già autenticato, redirect al dashboard di ruolo.
+  // ----------------------------------------------------------------
+  if (pathname.startsWith('/login')) {
     if (isAuthenticated) {
       const redirectUrl = role === 'admin' ? '/admin/dashboard' : '/calendar';
       return NextResponse.redirect(new URL(redirectUrl, req.url));
@@ -52,10 +68,7 @@ export default auth((req) => {
   // Rotte admin: /admin/*, /api/admin/* — solo ruolo 'admin'
   // RF-A CA2, T-SEC-02
   // ----------------------------------------------------------------
-  if (
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/api/admin')
-  ) {
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     if (role !== 'admin') {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'forbidden' }, { status: 403 });
