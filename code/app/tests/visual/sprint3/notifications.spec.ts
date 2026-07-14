@@ -12,7 +12,7 @@ test.describe('Centro notifiche — visual', () => {
 
   test('desktop light — centro notifiche', async ({ page }) => {
     await page.goto('/notifications');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Maschera timestamp per stabilità
     await page.evaluate(() => {
       document.querySelectorAll('time, [class*="text-xs"][class*="muted"]').forEach((el) => {
@@ -24,7 +24,7 @@ test.describe('Centro notifiche — visual', () => {
 
   test('desktop dark — centro notifiche', async ({ page }) => {
     await page.goto('/notifications');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -38,7 +38,7 @@ test.describe('Centro notifiche — visual', () => {
 
   test('mobile light — centro notifiche', async ({ page }) => {
     await page.goto('/notifications');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth);
     const vp = page.viewportSize();
     if (vp && vp.width <= 500) {
@@ -57,7 +57,8 @@ test.describe('Centro notifiche — visual', () => {
       await context.addCookies(JSON.parse(fs.readFileSync(adminAuthPath, 'utf-8')).cookies ?? []);
     }
     await page.goto('/notifications');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(1500);
     await page.evaluate(() => {
       document.querySelectorAll('time').forEach((el) => {
         (el as HTMLElement).style.visibility = 'hidden';

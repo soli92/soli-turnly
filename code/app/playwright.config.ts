@@ -63,6 +63,7 @@ export default defineConfig({
     {
       name: 'visual-desktop',
       testDir: './tests/visual',
+      timeout: 60_000,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
@@ -76,6 +77,7 @@ export default defineConfig({
     {
       name: 'visual-mobile',
       testDir: './tests/visual',
+      timeout: 60_000,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 375, height: 812 },

@@ -16,7 +16,7 @@ test.describe('Swap admin — visual', () => {
    */
   test('desktop light — due pannelli affiancati', async ({ page }) => {
     await page.goto('/admin/swap');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Maschera timestamp per screenshot stabili
     await page.evaluate(() => {
       document.querySelectorAll('time').forEach((el) => {
@@ -28,7 +28,7 @@ test.describe('Swap admin — visual', () => {
 
   test('desktop dark — due pannelli affiancati', async ({ page }) => {
     await page.goto('/admin/swap');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -45,7 +45,7 @@ test.describe('Swap admin — visual', () => {
    */
   test('mobile light — pannelli in colonna', async ({ page }) => {
     await page.goto('/admin/swap');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // Verifica nessun overflow orizzontale — solo su viewport mobile
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth);

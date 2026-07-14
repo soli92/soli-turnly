@@ -11,7 +11,7 @@ test.describe('Coda approvazioni admin — visual', () => {
 
   test('desktop light — lista richieste', async ({ page }) => {
     await page.goto('/admin/requests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Maschera i timestamp per stabilità
     await page.evaluate(() => {
       document
@@ -25,7 +25,7 @@ test.describe('Coda approvazioni admin — visual', () => {
 
   test('desktop dark — lista richieste', async ({ page }) => {
     await page.goto('/admin/requests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -39,7 +39,8 @@ test.describe('Coda approvazioni admin — visual', () => {
 
   test('mobile light — lista richieste', async ({ page }) => {
     await page.goto('/admin/requests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(2500);
     await expect(page).toHaveScreenshot('requests-admin-mobile-light.png', { maxDiffPixels: 50 });
   });
 });

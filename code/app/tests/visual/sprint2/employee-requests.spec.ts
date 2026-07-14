@@ -11,7 +11,8 @@ test.describe('Lista richieste dipendente — visual', () => {
 
   test('desktop light — lista richieste', async ({ page }) => {
     await page.goto('/requests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(2500);
     // Maschera timestamp per screenshot deterministico
     await page.evaluate(() => {
       document.querySelectorAll('time, [class*="text-xs"][class*="text-muted"]').forEach((el) => {
@@ -25,7 +26,7 @@ test.describe('Lista richieste dipendente — visual', () => {
 
   test('desktop dark — lista richieste', async ({ page }) => {
     await page.goto('/requests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -41,7 +42,8 @@ test.describe('Lista richieste dipendente — visual', () => {
 
   test('mobile light — lista richieste', async ({ page }) => {
     await page.goto('/requests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(2500);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth);
     const vp = page.viewportSize();
     if (vp && vp.width <= 500) {

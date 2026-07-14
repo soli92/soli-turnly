@@ -42,7 +42,63 @@ type VisualFixtures = {
   colleaguePage: Page;
   /** Imposta il tema sull'elemento <html> via data-theme attribute */
   setTheme: (page: Page, theme: Theme) => Promise<void>;
+  /** Naviga e aspetta che tutte le richieste /api/* siano completate */
+  gotoAndWait: (page: Page, url: string) => Promise<void>;
 };
+
+// ---------------------------------------------------------------------------
+// Helper: aspetta che non ci siano richieste /api/* attive per 600ms.
+// Registra i listener PRIMA della navigate (chiama prima di page.goto).
+// ---------------------------------------------------------------------------
+
+export function waitForApiQuiet(page: Page, quietMs = 600, timeoutMs = 10_000): Promise<void> {
+  let pending = 0;
+  let quietTimer: ReturnType<typeof setTimeout> | undefined;
+  let done = false;
+
+  return new Promise<void>((resolve) => {
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      if (quietTimer) clearTimeout(quietTimer);
+      clearTimeout(fallbackTimer);
+      page.off('request', onRequest);
+      page.off('requestfinished', onDone);
+      page.off('requestfailed', onDone);
+      resolve();
+    };
+
+    const scheduleQuiet = () => {
+      if (quietTimer) clearTimeout(quietTimer);
+      if (pending === 0 && !done) quietTimer = setTimeout(cleanup, quietMs);
+    };
+
+    const isDataApi = (url: string) =>
+      url.includes('/api/') && !url.includes('/api/auth/') && !url.includes('/_next/');
+
+    const onRequest = (req: { url: () => string }) => {
+      if (isDataApi(req.url())) {
+        pending++;
+        if (quietTimer) clearTimeout(quietTimer);
+      }
+    };
+    const onDone = (req: { url: () => string }) => {
+      if (isDataApi(req.url())) {
+        pending = Math.max(0, pending - 1);
+        scheduleQuiet();
+      }
+    };
+
+    const fallbackTimer = setTimeout(cleanup, timeoutMs);
+
+    page.on('request', onRequest);
+    page.on('requestfinished', onDone);
+    page.on('requestfailed', onDone);
+
+    // Se non ci sono richieste in volo ora, schedula quiet subito
+    scheduleQuiet();
+  });
+}
 
 const authDir = path.join(__dirname, '../../e2e/.auth');
 
@@ -69,6 +125,21 @@ async function applyTheme(page: Page, theme: Theme): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export const test = base.extend<VisualFixtures>({
+  // Override page.goto per iniettare waitForApiQuiet automaticamente.
+  // waitForApiQuiet parte DOPO waitForLoadState('load') perché React/TanStack
+  // Query iniziano i fetch client-side solo dopo il load event.
+  page: async ({ page }, use) => {
+    const origGoto = page.goto.bind(page) as typeof page.goto;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (page as any).goto = async (url: string, opts?: Parameters<typeof page.goto>[1]) => {
+      const resp = await origGoto(url, opts);
+      await page.waitForLoadState('load').catch(() => {});
+      await waitForApiQuiet(page);
+      return resp;
+    };
+    await use(page);
+  },
+
   // Pagina admin (usa auth già salvata da global-setup)
   adminPage: async ({ browser }, use) => {
     const ctx = await browser.newContext({
@@ -119,6 +190,15 @@ export const test = base.extend<VisualFixtures>({
   // Helper per impostare il tema
   setTheme: async ({}, use) => {
     await use(applyTheme);
+  },
+
+  // Helper navigazione + wait API quiet
+  gotoAndWait: async ({}, use) => {
+    await use(async (page: Page, url: string) => {
+      await page.goto(url);
+      await page.waitForLoadState('load');
+      await waitForApiQuiet(page);
+    });
   },
 });
 

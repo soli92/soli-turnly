@@ -20,7 +20,7 @@ test.describe('Dashboard admin — visual', () => {
 
   test('desktop light', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Rimuove aree dinamiche (timestamp, notifiche badge count) per screenshot stabili
     await page.evaluate(() => {
       // Nasconde eventuali badge count dinamici che potrebbero fluttuare
@@ -37,7 +37,7 @@ test.describe('Dashboard admin — visual', () => {
 
   test('desktop dark', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -55,7 +55,7 @@ test.describe('Dashboard admin — visual', () => {
 
   test('mobile light', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Nessun overflow orizzontale (AC TSK-030) — solo su viewport mobile
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth);
     const vp = page.viewportSize();
@@ -71,7 +71,7 @@ test.describe('Dashboard admin — visual', () => {
 
   test('mobile dark', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');

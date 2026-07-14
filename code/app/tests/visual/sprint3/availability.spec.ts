@@ -12,7 +12,7 @@ test.describe('Disponibilità dipendente — visual', () => {
 
   test('desktop light — calendario disponibilità', async ({ page }) => {
     await page.goto('/availability');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Maschera intestazione mese (dipende dalla data corrente)
     await page.evaluate(() => {
       document.querySelectorAll('.rbc-toolbar-label, [class*="month-label"], h2').forEach((el) => {
@@ -24,7 +24,7 @@ test.describe('Disponibilità dipendente — visual', () => {
 
   test('desktop dark — calendario disponibilità', async ({ page }) => {
     await page.goto('/availability');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -38,7 +38,7 @@ test.describe('Disponibilità dipendente — visual', () => {
 
   test('mobile light — disponibilità', async ({ page }) => {
     await page.goto('/availability');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth);
     const vp = page.viewportSize();
     if (vp && vp.width <= 500) {

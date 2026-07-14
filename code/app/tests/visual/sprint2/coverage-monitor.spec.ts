@@ -6,21 +6,20 @@
  *   - Tab "Monitor copertura" attivo nello screenshot
  */
 
-import { test, expect } from '../fixtures/visual-db';
+import { test, expect, waitForApiQuiet } from '../fixtures/visual-db';
 
 test.describe('Monitor copertura — visual', () => {
   test.use({ storageState: 'tests/e2e/.auth/admin.json' });
 
   test('desktop light — tab Monitor attivo', async ({ page }) => {
     await page.goto('/admin/coverage');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // Attiva tab Monitor
     const monitorTab = page.getByRole('tab', { name: /Monitor copertura/i });
     if ((await monitorTab.count()) > 0) {
       await monitorTab.click();
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(500);
+      await waitForApiQuiet(page);
     }
 
     await expect(page).toHaveScreenshot('coverage-monitor-desktop-light.png', {
@@ -30,12 +29,12 @@ test.describe('Monitor copertura — visual', () => {
 
   test('desktop light — tab Setup fabbisogni', async ({ page }) => {
     await page.goto('/admin/coverage');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const setupTab = page.getByRole('tab', { name: /Setup fabbisogni/i });
     if ((await setupTab.count()) > 0) {
       await setupTab.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
     }
 
     await expect(page).toHaveScreenshot('coverage-setup-desktop-light.png', { maxDiffPixels: 50 });
@@ -43,12 +42,12 @@ test.describe('Monitor copertura — visual', () => {
 
   test('desktop dark — Monitor copertura', async ({ page }) => {
     await page.goto('/admin/coverage');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const monitorTab = page.getByRole('tab', { name: /Monitor copertura/i });
     if ((await monitorTab.count()) > 0) {
       await monitorTab.click();
-      await page.waitForTimeout(500);
+      await waitForApiQuiet(page);
     }
 
     await page.evaluate(() => {
@@ -61,7 +60,7 @@ test.describe('Monitor copertura — visual', () => {
 
   test('mobile light — pagina coverage', async ({ page }) => {
     await page.goto('/admin/coverage');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveScreenshot('coverage-mobile-light.png', { maxDiffPixels: 50 });
   });
 });

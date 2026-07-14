@@ -12,7 +12,7 @@ test.describe('Calendario dipendente — visual', () => {
 
   test('desktop light — calendario mese', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Attende che il calendario react-big-calendar sia renderizzato
     const calendar = page.locator('.rbc-calendar');
     if ((await calendar.count()) > 0) {
@@ -31,7 +31,7 @@ test.describe('Calendario dipendente — visual', () => {
 
   test('desktop dark — calendario mese', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -50,7 +50,7 @@ test.describe('Calendario dipendente — visual', () => {
    */
   test('mobile light — nessun overflow orizzontale', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // Verifica nessun overflow orizzontale (AC esplicito TSK-030) — solo su viewport mobile
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

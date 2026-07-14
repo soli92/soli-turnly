@@ -11,7 +11,7 @@ test.describe('Anagrafica dipendenti — visual', () => {
 
   test('desktop light — lista dipendenti', async ({ page }) => {
     await page.goto('/admin/staff');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     // Attende tabella desktop o layout mobile alternativo (hidden md:block su mobile)
     await page
       .waitForSelector('[data-testid="staff-table-container"], [data-testid="staff-list-mobile"]', {
@@ -23,7 +23,7 @@ test.describe('Anagrafica dipendenti — visual', () => {
 
   test('desktop dark — lista dipendenti', async ({ page }) => {
     await page.goto('/admin/staff');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page
       .waitForSelector('[data-testid="staff-table-container"], [data-testid="staff-list-mobile"]', {
         timeout: 10_000,
@@ -39,7 +39,12 @@ test.describe('Anagrafica dipendenti — visual', () => {
 
   test('mobile light — lista dipendenti', async ({ page }) => {
     await page.goto('/admin/staff');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page
+      .waitForSelector('[data-testid="staff-table-container"], [data-testid="staff-list-mobile"]', {
+        timeout: 10_000,
+      })
+      .catch(() => {});
     await expect(page).toHaveScreenshot('staff-mobile-light.png', { maxDiffPixels: 50 });
   });
 });

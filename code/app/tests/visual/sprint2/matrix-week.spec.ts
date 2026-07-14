@@ -13,7 +13,7 @@ test.describe('Matrice turni — vista settimana — visual', () => {
 
   test('desktop light — con turni', async ({ page }) => {
     await page.goto('/admin/matrix');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // Attende che almeno una cella turno sia visibile (dati caricati)
     const anyShiftCell = page.locator('[data-testid^="shift-cell-"]').first();
@@ -28,7 +28,7 @@ test.describe('Matrice turni — vista settimana — visual', () => {
 
   test('desktop dark — con turni', async ({ page }) => {
     await page.goto('/admin/matrix');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -39,7 +39,7 @@ test.describe('Matrice turni — vista settimana — visual', () => {
 
   test('mobile light', async ({ page }) => {
     await page.goto('/admin/matrix');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth);
     const vp = page.viewportSize();
     if (vp && vp.width <= 500) {

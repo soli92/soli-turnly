@@ -12,7 +12,8 @@ test.describe('Report straordinari — visual', () => {
 
   test('desktop light — report straordinari', async ({ page }) => {
     await page.goto('/admin/reports/overtime');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(500);
     // Maschera valori numerici nei grafici (possono variare col tempo)
     await page.evaluate(() => {
       // Nasconde canvas o SVG dei grafici per screenshot stabili
@@ -27,7 +28,7 @@ test.describe('Report straordinari — visual', () => {
 
   test('desktop dark — report straordinari', async ({ page }) => {
     await page.goto('/admin/reports/overtime');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -51,7 +52,8 @@ test.describe('Report straordinari — visual', () => {
 
   test('mobile light — report straordinari', async ({ page }) => {
     await page.goto('/admin/reports/overtime');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(500);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth);
     const vp = page.viewportSize();
     if (vp && vp.width <= 500) {

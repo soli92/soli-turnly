@@ -11,13 +11,13 @@ test.describe('Tipologie turno — visual', () => {
 
   test('desktop light — lista tipologie', async ({ page }) => {
     await page.goto('/admin/shift-types');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveScreenshot('shift-types-desktop-light.png', { maxDiffPixels: 50 });
   });
 
   test('desktop dark — lista tipologie', async ({ page }) => {
     await page.goto('/admin/shift-types');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       document.documentElement.classList.add('dark');
@@ -28,7 +28,7 @@ test.describe('Tipologie turno — visual', () => {
 
   test('mobile light — lista tipologie', async ({ page }) => {
     await page.goto('/admin/shift-types');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveScreenshot('shift-types-mobile-light.png', { maxDiffPixels: 50 });
   });
 });
