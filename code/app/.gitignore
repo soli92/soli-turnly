@@ -2,3 +2,4 @@
 playwright-report/
 test-results/
 tests/e2e/.auth/*.json
+*.tsbuildinfo
