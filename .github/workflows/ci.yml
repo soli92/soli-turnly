@@ -12,6 +12,21 @@ jobs:
       run:
         working-directory: code/app
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: turnly_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,21 +47,42 @@ jobs:
       - name: Unit tests
         run: npx vitest run
 
+      - name: Run DB migrations
+        run: npx drizzle-kit migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turnly_test
+
+      - name: Seed DB
+        run: npx tsx db/seed.ts
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turnly_test
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: E2E tests
         run: npx playwright test --project=chromium
         env:
+          PORT: 3000
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turnly_test
           NEXTAUTH_SECRET: test-secret-ci
           NEXTAUTH_URL: http://localhost:3000
+          INNGEST_EVENT_KEY: local
+          INNGEST_SIGNING_KEY: ""
+          NODE_ENV: test
 
       - name: A11y tests
         run: npx playwright test --project=a11y
         env:
+          PORT: 3000
           PLAYWRIGHT_BASE_URL: http://localhost:3000
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turnly_test
+          NEXTAUTH_SECRET: test-secret-ci
+          NEXTAUTH_URL: http://localhost:3000
+          INNGEST_EVENT_KEY: local
+          INNGEST_SIGNING_KEY: ""
+          NODE_ENV: test
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

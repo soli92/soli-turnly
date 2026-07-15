@@ -20,7 +20,7 @@ export default defineConfig({
   fullyParallel: true,
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3001',
+    url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
