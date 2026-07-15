@@ -57,6 +57,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turnly_test
 
+      - name: Build app
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/turnly_test
+          NEXTAUTH_SECRET: test-secret-ci
+          NEXTAUTH_URL: http://localhost:3000
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 

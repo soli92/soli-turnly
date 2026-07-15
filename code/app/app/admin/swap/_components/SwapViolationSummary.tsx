@@ -53,13 +53,8 @@ function ViolationRow({
     },
   }[variant];
 
-  // Determina la parte (A o B) in base ad affectedUserId presente come campo aggiuntivo
-  // RuleViolation non ha party direttamente; usiamo affectedUserId se disponibile
-  const party = violation.affectedUserId
-    ? violation.affectedUserId.includes('-')
-      ? null
-      : violation.affectedUserId
-    : null;
+  // Determina la parte (A o B) dal campo party popolato dalla route.
+  const party = violation.party ?? null;
 
   return (
     <li

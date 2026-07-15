@@ -19,7 +19,9 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
   webServer: {
-    command: 'npm run dev',
+    // CI uses pre-built production server (no Turbopack on-demand compilation latency).
+    // Local dev uses Next.js dev mode for HMR.
+    command: process.env.CI ? 'npm run start' : 'npm run dev',
     url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

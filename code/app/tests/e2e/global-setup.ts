@@ -47,10 +47,24 @@ async function globalSetup() {
   await employeePage.fill('[name="email"]', 'mario.rossi@turnly.dev');
   await employeePage.fill('[name="password"]', 'Employee123!');
   await employeePage.click('[type="submit"]');
-  // Attende redirect a /calendar (middleware di ruolo per employee)
   await employeePage.waitForURL('**/calendar');
   await employeeContext.storageState({ path: path.join(authDir, 'employee.json') });
   await employeeContext.close();
+
+  // ------------------------------------------------------------------
+  // Setup sessione collega (lucia.verdi) — usata da T-REQ-03 / T-SEC-08
+  // Pre-creata qui per evitare latenza on-demand nel fixture sprint2-db.
+  // ------------------------------------------------------------------
+  const colleagueContext = await browser.newContext();
+  const colleaguePage = await colleagueContext.newPage();
+
+  await colleaguePage.goto(`${baseURL}/login`);
+  await colleaguePage.fill('[name="email"]', 'lucia.verdi@turnly.dev');
+  await colleaguePage.fill('[name="password"]', 'Employee123!');
+  await colleaguePage.click('[type="submit"]');
+  await colleaguePage.waitForURL('**/calendar', { timeout: 30_000 });
+  await colleagueContext.storageState({ path: path.join(authDir, 'colleague.json') });
+  await colleagueContext.close();
 
   await browser.close();
 }

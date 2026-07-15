@@ -30,6 +30,7 @@ import { ApiResponse } from '@/lib/api-response';
 import { extractIp, extractUserAgent } from '@/lib/audit';
 import { swapCreateSchema } from '@/lib/zod';
 import { validateSwap } from '@/lib/rules/validateSwap';
+import type { RuleViolation } from '@/lib/rules/types';
 
 export async function POST(req: Request): Promise<Response> {
   const session = await auth();
@@ -97,12 +98,26 @@ export async function POST(req: Request): Promise<Response> {
     })),
   });
 
+  // Helper: arricchisce ogni violation con il campo party (A o B).
+  // Party A = titolare del turno ceduto (shiftA.userId).
+  // Party B = ricevente del turno ceduto (shiftB.userId).
+  // Con exactOptionalPropertyTypes usiamo lo spread condizionale per non
+  // includere affatto la chiave `party` quando il match è assente.
+  const withParty = (v: RuleViolation): RuleViolation => ({
+    ...v,
+    ...(v.affectedUserId === shiftA.userId
+      ? ({ party: 'A' } as const)
+      : v.affectedUserId === shiftB.userId
+        ? ({ party: 'B' } as const)
+        : {}),
+  });
+
   // 4b. Blocking violations → 422, nessuna modifica DB
   if (!validationResult.valid && validationResult.blocking.length > 0) {
     return ApiResponse.ok(
       {
         outcome: 'rejected',
-        blocking: validationResult.blocking,
+        blocking: validationResult.blocking.map(withParty),
       },
       422
     );
@@ -113,7 +128,7 @@ export async function POST(req: Request): Promise<Response> {
     return ApiResponse.ok({
       outcome: 'warnings',
       requiresConfirmation: true,
-      warnings: validationResult.warnings,
+      warnings: validationResult.warnings.map(withParty),
     });
   }
 

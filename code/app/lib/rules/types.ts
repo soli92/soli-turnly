@@ -32,6 +32,8 @@ export interface RuleViolation {
   message: string;
   field?: string;
   affectedUserId?: string;
+  /** Parte del contratto di swap impattata dalla violation (A = cedente, B = ricevente). */
+  party?: 'A' | 'B';
 }
 
 export interface ValidationResult {

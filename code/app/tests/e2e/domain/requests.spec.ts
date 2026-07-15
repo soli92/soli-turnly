@@ -44,15 +44,24 @@ test.describe('T-REQ: Flusso richieste', () => {
 
     // Step 2: compila i dettagli dell'assenza
     // Usa input[name=] perché FormLabel/FormControl (shadcn/ui) non crea accessible name in Playwright
-    await expect(employeePage.locator('input[name="startDate"]')).toBeVisible({ timeout: 8_000 });
+    await expect(employeePage.locator('input[name="startDate"]')).toBeVisible({ timeout: 15_000 });
     await employeePage.locator('input[name="startDate"]').fill('2027-01-15');
     await employeePage.locator('input[name="endDate"]').fill('2027-01-17');
+
+    // Seleziona tipo assenza se il campo è presente e required
+    const absenceTypeSelect = employeePage
+      .getByLabel(/Tipo.*assenza|Motivo/i)
+      .or(employeePage.locator('[aria-label="Seleziona tipo di assenza"]'));
+    if ((await absenceTypeSelect.count()) > 0) {
+      await absenceTypeSelect.click();
+      await employeePage.getByRole('option').first().click();
+    }
 
     // Step 2 → Step 3 (review)
     await employeePage.getByTestId('absence-form-next-btn').click();
 
     // Step 3: invia la richiesta
-    await expect(employeePage.getByTestId('confirm-submit-btn')).toBeVisible({ timeout: 8_000 });
+    await expect(employeePage.getByTestId('confirm-submit-btn')).toBeVisible({ timeout: 15_000 });
     await employeePage.getByTestId('confirm-submit-btn').click();
 
     // Attende redirect a /requests — onSuccess chiama router.push('/requests')

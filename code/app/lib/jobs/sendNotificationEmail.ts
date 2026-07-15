@@ -132,8 +132,9 @@ async function buildEmailHtml(
     }
 
     default: {
-      // Fallback di sicurezza — non dovrebbe mai verificarsi con i tipi TS
-      return `<p>${JSON.stringify(payload)}</p>`;
+      // Template sconosciuto — non esporre payload in email (PII)
+      console.error('[sendNotificationEmail] template sconosciuto:', template);
+      return '<p>Hai ricevuto una notifica da Turnly. Accedi all\'app per i dettagli.</p>';
     }
   }
 }
