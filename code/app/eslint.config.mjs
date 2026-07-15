@@ -11,6 +11,10 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Files excluded from all linting (non-TS configs and Next.js generated files)
+  {
+    ignores: ['eslint.config.mjs', 'postcss.config.js', 'next-env.d.ts', '.next/**'],
+  },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     // languageOptions with parserOptions.project is required for typed rules
@@ -39,6 +43,14 @@ const eslintConfig = [
       // Accessibility
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/aria-props': 'error',
+    },
+  },
+  // Playwright test fixtures use a `use` callback that react-hooks/rules-of-hooks
+  // incorrectly identifies as a React Hook invocation.
+  {
+    files: ['tests/**/*.ts', 'tests/**/*.tsx'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
 ];

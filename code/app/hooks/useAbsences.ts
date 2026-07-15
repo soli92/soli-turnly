@@ -150,8 +150,8 @@ export function useCreateAbsence() {
     },
     onSuccess: () => {
       // Invalida assenze e turni (RF-G CA1: RB-08 blocca nuovi turni nelle date)
-      queryClient.invalidateQueries({ queryKey: absenceKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      void queryClient.invalidateQueries({ queryKey: absenceKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['shifts'] });
     },
   });
 }
@@ -175,7 +175,7 @@ export function useDeleteAbsence() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: absenceKeys.all });
+      void queryClient.invalidateQueries({ queryKey: absenceKeys.all });
     },
   });
 }

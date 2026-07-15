@@ -182,7 +182,7 @@ export function usePatchRecurrence() {
       return res.json() as Promise<RecurrenceRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: recurrenceKeys.all });
+      void queryClient.invalidateQueries({ queryKey: recurrenceKeys.all });
     },
   });
 }
@@ -204,7 +204,7 @@ export function useDeactivateRecurrence() {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: recurrenceKeys.all });
+      void queryClient.invalidateQueries({ queryKey: recurrenceKeys.all });
     },
   });
 }
@@ -255,7 +255,7 @@ export function useGenerateRecurrence() {
     },
     onSuccess: () => {
       // Invalida lista ricorrenze e turni generati
-      queryClient.invalidateQueries({ queryKey: recurrenceKeys.all });
+      void queryClient.invalidateQueries({ queryKey: recurrenceKeys.all });
     },
   });
 }

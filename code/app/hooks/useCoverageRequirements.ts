@@ -111,8 +111,8 @@ export function useCreateCoverageRequirement() {
       return res.json() as Promise<CoverageRequirementRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coverageReqKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
+      void queryClient.invalidateQueries({ queryKey: coverageReqKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
     },
   });
 }
@@ -142,8 +142,8 @@ export function useUpdateCoverageRequirement() {
       return res.json() as Promise<CoverageRequirementRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coverageReqKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
+      void queryClient.invalidateQueries({ queryKey: coverageReqKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
     },
   });
 }
@@ -170,8 +170,8 @@ export function useDeleteCoverageRequirement() {
       return res.json() as Promise<{ deleted: boolean; id: string }>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coverageReqKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
+      void queryClient.invalidateQueries({ queryKey: coverageReqKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
     },
   });
 }

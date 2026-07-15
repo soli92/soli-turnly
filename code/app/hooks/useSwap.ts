@@ -153,8 +153,8 @@ export function useExecuteSwap() {
     onSuccess: (data) => {
       if (data.outcome === 'executed') {
         // Invalida cache turni (i userId dei turni sono cambiati)
-        queryClient.invalidateQueries({ queryKey: shiftKeys.all });
-        queryClient.invalidateQueries({ queryKey: swapKeys.all });
+        void queryClient.invalidateQueries({ queryKey: shiftKeys.all });
+        void queryClient.invalidateQueries({ queryKey: swapKeys.all });
       }
     },
   });

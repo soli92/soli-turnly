@@ -117,7 +117,7 @@ export function useCreateShift() {
     },
     onSuccess: () => {
       // Invalida tutte le query sui turni per forzare il refetch
-      queryClient.invalidateQueries({ queryKey: shiftKeys.all });
+      void queryClient.invalidateQueries({ queryKey: shiftKeys.all });
     },
   });
 }
@@ -143,7 +143,7 @@ export function useUpdateShift() {
       return res.json() as Promise<ShiftRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: shiftKeys.all });
+      void queryClient.invalidateQueries({ queryKey: shiftKeys.all });
     },
   });
 }
@@ -227,7 +227,7 @@ export function useDeleteShift() {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: shiftKeys.all });
+      void queryClient.invalidateQueries({ queryKey: shiftKeys.all });
     },
   });
 }

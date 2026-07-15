@@ -109,7 +109,7 @@ export function useCreateShiftType() {
       return res.json() as Promise<ShiftTypeFullRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
+      void queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
     },
   });
 }
@@ -139,7 +139,7 @@ export function useUpdateShiftType() {
       return res.json() as Promise<ShiftTypeFullRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
+      void queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
     },
   });
 }
@@ -166,7 +166,7 @@ export function useDeactivateShiftType() {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
+      void queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
     },
   });
 }
@@ -190,7 +190,7 @@ export function useDeleteShiftType() {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
+      void queryClient.invalidateQueries({ queryKey: shiftTypeKeys.all });
     },
   });
 }

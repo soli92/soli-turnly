@@ -209,7 +209,7 @@ export function useCreateRequest() {
       return res.json() as Promise<RequestRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: requestKeys.all });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.all });
     },
   });
 }
@@ -246,8 +246,8 @@ export function useApproveRequest() {
       return res.json() as Promise<RequestRow>;
     },
     onSuccess: (_data, { id }) => {
-      queryClient.invalidateQueries({ queryKey: requestKeys.all });
-      queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.all });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
     },
   });
 }
@@ -273,8 +273,8 @@ export function useRejectRequest() {
       return res.json() as Promise<RequestRow>;
     },
     onSuccess: (_data, { id }) => {
-      queryClient.invalidateQueries({ queryKey: requestKeys.all });
-      queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.all });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
     },
   });
 }
@@ -317,7 +317,7 @@ export function useCancelRequest() {
       return res.json() as Promise<RequestRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: requestKeys.all });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.all });
     },
   });
 }
@@ -351,8 +351,8 @@ export function useAcceptSwap() {
       return res.json() as Promise<RequestRow>;
     },
     onSuccess: (_data, { id }) => {
-      queryClient.invalidateQueries({ queryKey: requestKeys.all });
-      queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.all });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
     },
   });
 }
@@ -391,8 +391,8 @@ export function useRejectSwap() {
       return res.json() as Promise<RequestRow>;
     },
     onSuccess: (_data, { id }) => {
-      queryClient.invalidateQueries({ queryKey: requestKeys.all });
-      queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.all });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.detail(id) });
     },
   });
 }

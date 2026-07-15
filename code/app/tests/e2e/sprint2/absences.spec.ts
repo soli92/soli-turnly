@@ -44,7 +44,7 @@ test.describe('RF-G: Registrazione assenze', () => {
     });
 
     // Seleziona dipendente (primo della lista)
-    const dipendenteTrigger = adminPage
+    const _dipendenteTrigger = adminPage
       .getByRole('combobox')
       .filter({
         has: adminPage

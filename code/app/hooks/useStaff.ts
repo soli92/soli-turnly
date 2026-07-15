@@ -99,7 +99,7 @@ export function useCreateStaff() {
       return res.json() as Promise<StaffRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: staffKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: staffKeys.list() });
     },
   });
 }
@@ -122,7 +122,7 @@ export function usePatchStaff() {
       return res.json() as Promise<StaffRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: staffKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: staffKeys.list() });
     },
   });
 }

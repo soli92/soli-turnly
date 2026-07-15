@@ -116,7 +116,7 @@ export function usePatchMe() {
       return res.json() as Promise<MeRow>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.me() });
+      void queryClient.invalidateQueries({ queryKey: userKeys.me() });
     },
   });
 }

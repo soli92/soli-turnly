@@ -47,64 +47,64 @@ export function useNotifications(): void {
 
       switch (event.type) {
         case 'shift.assigned':
-          queryClient.invalidateQueries({ queryKey: ['shifts'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['shifts'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           // RF-H CA2: aggiorna il monitor copertura in tempo reale
-          queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
+          void queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
           toast.info('Nuovo turno assegnato');
           break;
 
         case 'shift.modified':
-          queryClient.invalidateQueries({ queryKey: ['shifts'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['shifts'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           // RF-H CA2: aggiorna il monitor copertura in tempo reale
-          queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
+          void queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
           toast.info('Turno modificato');
           break;
 
         case 'shift.deleted':
-          queryClient.invalidateQueries({ queryKey: ['shifts'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['shifts'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           // RF-H CA2: aggiorna il monitor copertura in tempo reale
-          queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
+          void queryClient.invalidateQueries({ queryKey: ['coverage-monitor'] });
           toast.info('Turno cancellato');
           break;
 
         case 'request.received':
           // Destinatario: admin — nuova richiesta da approvare
-          queryClient.invalidateQueries({ queryKey: ['requests'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['requests'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           toast.info('Nuova richiesta ricevuta');
           break;
 
         case 'request.approved':
-          queryClient.invalidateQueries({ queryKey: ['requests'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['requests'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           toast.success('La tua richiesta è stata approvata');
           break;
 
         case 'request.rejected':
-          queryClient.invalidateQueries({ queryKey: ['requests'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['requests'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           toast.error('La tua richiesta è stata rifiutata');
           break;
 
         case 'swap.request':
-          queryClient.invalidateQueries({ queryKey: ['requests'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['requests'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           toast.info('Richiesta di scambio turno ricevuta');
           break;
 
         case 'swap.accepted':
-          queryClient.invalidateQueries({ queryKey: ['shifts'] });
-          queryClient.invalidateQueries({ queryKey: ['requests'] });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: ['shifts'] });
+          void queryClient.invalidateQueries({ queryKey: ['requests'] });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           toast.success('Scambio turno accettato');
           break;
 
         default:
           // Evento sconosciuto — invalida le notifiche come fallback
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all() });
           break;
       }
     };
