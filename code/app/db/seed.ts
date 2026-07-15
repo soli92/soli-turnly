@@ -252,7 +252,7 @@ async function seed() {
     { name: 'Permesso', code: 'PER', paidLeave: true, requiresApproval: true },
     { name: 'Maternità/Paternità', code: 'MAT', paidLeave: true, requiresApproval: true },
     { name: 'Altro', code: 'ALT', paidLeave: false, requiresApproval: true },
-  ]);
+  ]).onConflictDoNothing();
 
   console.log('  absence_types: Ferie, Malattia, Permesso, Maternità/Paternità, Altro');
 
