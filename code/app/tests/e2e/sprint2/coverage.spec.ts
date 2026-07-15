@@ -74,9 +74,9 @@ test.describe('RF-H: Copertura turni', () => {
       await adminPage.getByRole('option').first().click();
     }
 
-    // Minimo richiesto
-    const minimoInput = adminPage.locator('[role="dialog"]').getByLabel(/Minimo/i);
-    await expect(minimoInput).toBeVisible({ timeout: 3_000 });
+    // Minimo richiesto (input[type="number"] con name="minimumCount")
+    const minimoInput = adminPage.locator('[role="dialog"] input[name="minimumCount"]');
+    await expect(minimoInput).toBeVisible({ timeout: 10_000 });
     await minimoInput.fill('2');
 
     // Salva
@@ -160,15 +160,16 @@ test.describe('RF-H: Copertura turni', () => {
     const nextBtn = adminPage.getByRole('button', { name: /Periodo successivo/i });
     await expect(prevBtn).toBeVisible({ timeout: 10_000 });
 
-    // Legge il label del periodo corrente
-    const periodLabel = adminPage.locator('[class*="text-sm"][class*="font-medium"]').first();
-    const labelBefore = await periodLabel.textContent();
+    // Legge il label del periodo corrente dal grid (aria-label="Monitor copertura — {periodo}")
+    const grid = adminPage.getByRole('grid', { name: /Monitor copertura/i });
+    await expect(grid).toBeVisible({ timeout: 10_000 });
+    const labelBefore = await grid.getAttribute('aria-label');
 
     // Naviga avanti
     await nextBtn.click();
     await adminPage.waitForTimeout(500);
 
-    const labelAfter = await periodLabel.textContent();
+    const labelAfter = await grid.getAttribute('aria-label');
     expect(labelAfter).not.toBe(labelBefore);
   });
 

@@ -62,8 +62,8 @@ test.describe('RF-G: Registrazione assenze', () => {
     await adminPage.getByRole('option', { name: /Ferie/i }).click();
 
     // Date future senza turni (anno 2030)
-    await adminPage.getByLabel('Data inizio').fill('2030-07-01');
-    await adminPage.getByLabel('Data fine').fill('2030-07-05');
+    await adminPage.locator('input[name="startDate"]').fill('2030-07-01');
+    await adminPage.locator('input[name="endDate"]').fill('2030-07-05');
 
     // Submit
     await adminPage.getByRole('button', { name: /Registra assenza|Verifica conflitti/i }).click();
@@ -146,8 +146,8 @@ test.describe('RF-G: Registrazione assenze', () => {
       await adminPage.getByRole('option', { name: /Malattia/i }).click();
 
       // Date che includono il turno creato
-      await adminPage.getByLabel('Data inizio').fill('2029-03-08');
-      await adminPage.getByLabel('Data fine').fill('2029-03-12');
+      await adminPage.locator('input[name="startDate"]').fill('2029-03-08');
+      await adminPage.locator('input[name="endDate"]').fill('2029-03-12');
 
       // Submit: il form chiama check-conflicts
       await adminPage.getByRole('button', { name: /Registra assenza|Verifica conflitti/i }).click();
@@ -188,8 +188,8 @@ test.describe('RF-G: Registrazione assenze', () => {
     await adminPage.getByRole('option').first().click();
 
     // Date invertite
-    await adminPage.getByLabel('Data inizio').fill('2030-08-15');
-    await adminPage.getByLabel('Data fine').fill('2030-08-10');
+    await adminPage.locator('input[name="startDate"]').fill('2030-08-15');
+    await adminPage.locator('input[name="endDate"]').fill('2030-08-10');
 
     await adminPage.getByRole('button', { name: /Registra assenza|Verifica conflitti/i }).click();
 

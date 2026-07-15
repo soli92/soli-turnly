@@ -58,10 +58,8 @@ test.describe('RF-E: Wizard ricorrenze', () => {
       await lunediCheckbox.check();
     }
 
-    // Seleziona tipo turno per Lunedì
-    const shiftTypeTrigger = adminPage
-      .locator('[aria-label="Tipo turno per Lunedì"]')
-      .or(adminPage.locator('[aria-label*="Lunedì"]'));
+    // Seleziona tipo turno per Lunedì (locator esatto sul combobox, non sulla checkbox)
+    const shiftTypeTrigger = adminPage.locator('[aria-label="Tipo turno per Lunedì"]');
     if ((await shiftTypeTrigger.count()) > 0) {
       await shiftTypeTrigger.click();
       await adminPage.getByRole('option').first().click();
@@ -77,28 +75,28 @@ test.describe('RF-E: Wizard ricorrenze', () => {
     await adminPage.getByLabel('Data inizio').fill('2029-09-01');
     await adminPage.getByLabel('Data fine').fill('2029-09-30');
 
-    // Seleziona almeno un dipendente (primo checkbox/option della lista)
-    const employeeCheckbox = adminPage
-      .getByRole('checkbox')
-      .filter({
-        hasNot: adminPage.getByLabel(/Lunedì|holiday|festiv/i),
-      })
+    // Attende che la lista dipendenti si carichi (API asincrona), poi seleziona il primo
+    const firstEmployeeCheckbox = adminPage
+      .getByRole('checkbox', { name: /^Seleziona/i })
       .first();
-    if ((await employeeCheckbox.count()) > 0 && !(await employeeCheckbox.isChecked())) {
-      await employeeCheckbox.check();
-    }
+    await expect(firstEmployeeCheckbox).toBeVisible({ timeout: 10_000 });
+    // Usa click() (non check()) per garantire che React onChange sia invocato
+    await firstEmployeeCheckbox.click();
+    await expect(firstEmployeeCheckbox).toBeChecked({ timeout: 3_000 });
 
-    // Avanza allo step 3
-    await adminPage.getByRole('button', { name: /Avanti/i }).click();
+    // Avanza allo step 3 (il bottone specifico evita ambiguità)
+    await adminPage.getByRole('button', { name: 'Avanti: Anteprima' }).click();
 
     // --- Step 3: Anteprima ---
-    await expect(
-      adminPage.getByText(/Passo 3: Anteprima/i).or(adminPage.getByText(/Verifica e genera/i))
-    ).toBeVisible({ timeout: 8_000 });
+    // Il titolo è nell'orchestratore (RecurrenceWizard), non nel componente preview
+    await expect(adminPage.getByRole('heading', { name: /Passo 3/i })).toBeVisible({
+      timeout: 20_000,
+    });
 
-    // Il bottone "Genera turni" deve essere visibile
-    await expect(adminPage.getByRole('button', { name: /Genera turni/i })).toBeVisible({
-      timeout: 5_000,
+    // Il bottone "Genera N turni" è visibile SOLO dopo che la preview API risponde
+    // (RecurrencePreviewStep restituisce uno spinner durante il loading)
+    await expect(adminPage.getByRole('button', { name: /^Genera/i })).toBeVisible({
+      timeout: 30_000,
     });
   });
 

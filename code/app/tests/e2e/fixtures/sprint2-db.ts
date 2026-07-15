@@ -71,7 +71,7 @@ export const test = base.extend<Sprint2Fixtures>({
     if (!fs.existsSync(colleagueAuthPath)) {
       const setupCtx = await browser.newContext();
       const setupPage = await setupCtx.newPage();
-      const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
+      const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3001';
 
       await setupPage.goto(`${baseURL}/login`);
       await setupPage.fill('[name="email"]', 'lucia.verdi@turnly.dev');

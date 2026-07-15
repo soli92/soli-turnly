@@ -147,10 +147,8 @@ test.describe('RF-B: Gestione dipendenti', () => {
     // Submit del form
     await adminPage.getByTestId('staff-submit').click();
 
-    // AlertDialog di conferma deve apparire con testo sulla disattivazione
-    await expect(
-      adminPage.getByRole('alertdialog').or(adminPage.getByText('non potrà ricevere nuovi turni'))
-    ).toBeVisible({ timeout: 8_000 });
+    // AlertDialog di conferma deve apparire
+    await expect(adminPage.getByRole('alertdialog')).toBeVisible({ timeout: 8_000 });
 
     // Clicca "Annulla" per non effettuare la disattivazione
     await adminPage.getByRole('button', { name: 'Annulla' }).last().click();

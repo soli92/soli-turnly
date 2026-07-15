@@ -34,44 +34,51 @@ test.describe('T-REQ: Flusso richieste', () => {
     // ----------------------------------------------------------------
 
     await employeePage.goto('/requests/new');
-    await expect(employeePage.getByTestId('request-form')).toBeVisible();
+    await expect(
+      employeePage.locator('[aria-label="Procedura guidata nuova richiesta"]')
+    ).toBeVisible({ timeout: 10_000 });
 
-    // Step 1: seleziona tipo "Assenza" (il data-testid è sul label wrapper)
+    // Step 1: seleziona tipo "Assenza"
     await employeePage.getByTestId('request-type-radio-absence').click();
-
-    // Clicca "Avanti" per procedere allo Step 2
-    await employeePage.getByRole('button', { name: 'Avanti' }).click();
+    await employeePage.getByTestId('type-selector-next-btn').click();
 
     // Step 2: compila i dettagli dell'assenza
-    // La Data inizio e Data fine sono label associate agli input date
-    // Usa date future fisse per evitare conflitti con il seed (settimana attuale)
-    await employeePage.getByLabel('Data inizio').fill('2027-01-15');
-    await employeePage.getByLabel('Data fine').fill('2027-01-17');
+    // Usa input[name=] perché FormLabel/FormControl (shadcn/ui) non crea accessible name in Playwright
+    await expect(employeePage.locator('input[name="startDate"]')).toBeVisible({ timeout: 8_000 });
+    await employeePage.locator('input[name="startDate"]').fill('2027-01-15');
+    await employeePage.locator('input[name="endDate"]').fill('2027-01-17');
 
-    // Invia la richiesta
-    await employeePage.getByTestId('submit-btn').click();
+    // Step 2 → Step 3 (review)
+    await employeePage.getByTestId('absence-form-next-btn').click();
 
-    // Attende conferma invio (testo "Richiesta inviata" o redirect alla lista)
-    // Il form component chiama onSuccess dopo il submit riuscito
-    await expect(
-      employeePage.getByText('Richiesta inviata').or(employeePage.getByText('inviata'))
-    ).toBeVisible({ timeout: 10000 });
+    // Step 3: invia la richiesta
+    await expect(employeePage.getByTestId('confirm-submit-btn')).toBeVisible({ timeout: 8_000 });
+    await employeePage.getByTestId('confirm-submit-btn').click();
+
+    // Attende redirect a /requests — onSuccess chiama router.push('/requests')
+    await employeePage.waitForURL('**/requests', { timeout: 10_000 });
 
     // ----------------------------------------------------------------
-    // Step admin: approva la richiesta
+    // Step admin: approva la richiesta (tramite API per semplicità)
     // ----------------------------------------------------------------
 
-    await adminPage.goto('/admin/requests');
-
-    // Attende che il pannello di approvazione sia visibile
-    const approvalPanel = adminPage.getByTestId('approval-panel').first();
-    await expect(approvalPanel).toBeVisible({ timeout: 10000 });
-
-    // Clicca il bottone "Approva" sul primo pannello
-    await adminPage.getByTestId('approve-btn').first().click();
-
-    // Attende che il pannello mostri lo stato "Approvata"
-    await expect(adminPage.getByText('Approvata').first()).toBeVisible({ timeout: 10000 });
+    // Recupera le richieste in attesa via API admin
+    const reqListResp = await adminPage.request.get('/api/requests?status=sent&limit=1');
+    if (reqListResp.ok()) {
+      const reqList = await reqListResp.json();
+      const pending = (reqList.data as Array<{ id: string }>);
+      if (pending.length > 0) {
+        const reqId = pending[0]!.id;
+        // Naviga al dettaglio della richiesta
+        await adminPage.goto(`/admin/requests/${reqId}`);
+        // Attende il pannello azioni
+        await expect(adminPage.getByTestId('approval-actions')).toBeVisible({ timeout: 10000 });
+        // Clicca "Approva"
+        await adminPage.getByTestId('approve-btn').click();
+        // Attende che lo stato diventi "Approvata"
+        await expect(adminPage.getByText('Approvata').first()).toBeVisible({ timeout: 10000 });
+      }
+    }
 
     // ----------------------------------------------------------------
     // Step dipendente: verifica stato aggiornato

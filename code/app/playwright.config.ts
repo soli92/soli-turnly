@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  *   - firefox  (Desktop Firefox)
  *
  * Variabili d'ambiente:
- *   PLAYWRIGHT_BASE_URL — override URL base (default: http://localhost:3000)
+ *   PLAYWRIGHT_BASE_URL — override URL base (default: http://localhost:3001)
  *   CI                  — riduces timeout, abilita retries, forbidOnly
  */
 
@@ -20,18 +20,18 @@ export default defineConfig({
   fullyParallel: true,
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // NOTE: workers: undefined non è assegnabile con exactOptionalPropertyTypes — spread condizionale.
-  ...(process.env.CI ? { workers: 1 } : {}),
+  // Limit parallelism: CI=1 for stability, local=3 to avoid "page closed" under load.
+  workers: process.env.CI ? 1 : 3,
   globalSetup: require.resolve('./tests/e2e/global-setup'),
   reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -69,6 +69,9 @@ export default defineConfig({
         viewport: { width: 1280, height: 800 },
       },
       snapshotDir: './tests/visual/__snapshots__/desktop',
+      // OS-agnostic baselines: omit {-snapshotSuffix} so the same .png works
+      // on darwin (local) and linux (CI) without separate per-platform files.
+      snapshotPathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}{-projectName}{ext}',
       dependencies: ['setup'],
     },
     // -----------------------------------------------------------------------
@@ -83,6 +86,8 @@ export default defineConfig({
         viewport: { width: 375, height: 812 },
       },
       snapshotDir: './tests/visual/__snapshots__/mobile',
+      // OS-agnostic baselines: same rationale as visual-desktop.
+      snapshotPathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}{-projectName}{ext}',
       dependencies: ['setup'],
     },
   ],

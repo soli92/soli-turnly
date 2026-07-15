@@ -99,7 +99,7 @@ export async function POST(req: Request): Promise<Response> {
     .values({
       userId: session.user.id as string,
       type,
-      status: 'draft',
+      status: 'sent',
       payload: (payload ?? null) as Record<string, unknown> | null,
       submittedAt: new Date(),
     })

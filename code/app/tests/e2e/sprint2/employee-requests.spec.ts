@@ -46,9 +46,10 @@ test.describe('RF-M employee: Richieste dipendente', () => {
     await employeePage.getByTestId('type-selector-next-btn').click();
 
     // Step 2 (RequestFormAbsence): compila date future
-    await expect(employeePage.getByLabel('Data inizio')).toBeVisible({ timeout: 5_000 });
-    await employeePage.getByLabel('Data inizio').fill('2032-04-01');
-    await employeePage.getByLabel('Data fine').fill('2032-04-03');
+    // Usa input[name=] perché FormLabel/FormControl (shadcn/ui) non crea accessible name in Playwright
+    await expect(employeePage.locator('input[name="startDate"]')).toBeVisible({ timeout: 5_000 });
+    await employeePage.locator('input[name="startDate"]').fill('2032-04-01');
+    await employeePage.locator('input[name="endDate"]').fill('2032-04-03');
 
     // Seleziona tipo assenza se presente nel form (può essere un select)
     const absenceTypeSelect = employeePage
@@ -67,12 +68,9 @@ test.describe('RF-M employee: Richieste dipendente', () => {
     await expect(employeePage.getByTestId('confirm-submit-btn')).toBeVisible({ timeout: 5_000 });
     await employeePage.getByTestId('confirm-submit-btn').click();
 
-    // Verifica conferma (testo successo o redirect a /requests)
-    await expect(
-      employeePage
-        .getByText(/inviata|successo|Richiesta inviata/i)
-        .or(employeePage.getByRole('status').filter({ hasText: /inviata/i }))
-    ).toBeVisible({ timeout: 10_000 });
+    // Verifica conferma: il form invia e redirige a /requests (lista richieste)
+    await employeePage.waitForURL('**/requests', { timeout: 10_000 });
+    await expect(employeePage.getByRole('heading', { name: /Le mie richieste/i })).toBeVisible();
   });
 
   /**
@@ -357,8 +355,8 @@ test.describe('RF-M employee: Richieste dipendente', () => {
   test('RF-M WIZARD-TYPES: tutti e 4 i tipi di richiesta visibili', async ({ employeePage }) => {
     await employeePage.goto('/requests/new');
 
-    // Attende che la pagina sia caricata
-    await employeePage.waitForLoadState('networkidle', { timeout: 10_000 });
+    // Attende che la pagina sia caricata (networkidle non funziona con SSE)
+    await employeePage.waitForLoadState('domcontentloaded');
 
     // Verifica la presenza di tutti e 4 i data-testid per i tipi
     await expect(employeePage.getByTestId('request-type-radio-absence')).toBeVisible({

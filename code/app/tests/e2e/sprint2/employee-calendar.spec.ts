@@ -174,8 +174,8 @@ test.describe('RF-J: Calendario dipendente', () => {
       .or(employeePage.locator('.rbc-toolbar').getByRole('button').nth(0));
     await expect(prevBtn).toBeVisible({ timeout: 5_000 });
 
-    // Legge il label del mese corrente
-    const monthLabel = employeePage.locator('.rbc-toolbar-label');
+    // Legge il label del mese corrente (span con aria-live nella CalendarToolbar custom)
+    const monthLabel = employeePage.locator('[aria-live="polite"][aria-atomic="true"]').first();
     const labelBefore = await monthLabel.textContent();
 
     // Naviga al mese successivo
