@@ -3,3 +3,7 @@ playwright-report/
 test-results/
 tests/e2e/.auth/*.json
 *.tsbuildinfo
+
+# Re-include app/admin/coverage/ (matched by root .gitignore coverage/ rule)
+!app/admin/coverage/
+!app/admin/coverage/**
