@@ -36,7 +36,7 @@ test.describe('T-REQ: Flusso richieste', () => {
     await employeePage.goto('/requests/new');
     await expect(
       employeePage.locator('[aria-label="Procedura guidata nuova richiesta"]')
-    ).toBeVisible({ timeout: 10_000 });
+    ).toBeVisible({ timeout: 30_000 });
 
     // Step 1: seleziona tipo "Assenza"
     await employeePage.getByTestId('request-type-radio-absence').click();

@@ -81,6 +81,7 @@ test.describe('RF-G: Registrazione assenze', () => {
       adminPage
         .getByText(/registrat|successo|salv/i)
         .or(adminPage.locator('[role="status"]').filter({ hasText: /registrat/i }))
+        .first()
     ).toBeVisible({ timeout: 10_000 });
   });
 
@@ -195,7 +196,10 @@ test.describe('RF-G: Registrazione assenze', () => {
 
     // Messaggio di errore Zod: "fine deve essere successiva"
     await expect(
-      adminPage.getByText(/successiv|uguale|fine.*inizio/i).or(adminPage.locator('[role="alert"]'))
+      adminPage
+        .getByText(/successiv|uguale|fine.*inizio/i)
+        .or(adminPage.locator('[role="alert"]'))
+        .first()
     ).toBeVisible({ timeout: 5_000 });
   });
 

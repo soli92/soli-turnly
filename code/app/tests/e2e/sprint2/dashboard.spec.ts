@@ -80,9 +80,13 @@ test.describe('RF-K: Dashboard admin', () => {
       return;
     }
 
-    // Attende che il badge mostri un valore diverso (il count deve crescere di 1)
+    // Ricarica la pagina per forzare refetch del badge (SSE potrebbe non essere attivo in CI)
+    await adminPage.reload();
+    await expect(inboxBadge).toBeVisible({ timeout: 10_000 });
+
+    // Il badge deve mostrare un valore diverso da countBefore
     await expect(inboxBadge.locator('p.text-3xl')).not.toHaveText(countBefore ?? '', {
-      timeout: 35_000,
+      timeout: 10_000,
     });
   });
 

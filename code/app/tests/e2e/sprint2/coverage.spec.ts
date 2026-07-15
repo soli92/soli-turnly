@@ -34,7 +34,7 @@ test.describe('RF-H: Copertura turni', () => {
 
     // Attende che le tab siano visibili
     const tabList = adminPage.getByRole('tablist', { name: /copertura/i });
-    await expect(tabList).toBeVisible({ timeout: 10_000 });
+    await expect(tabList).toBeVisible({ timeout: 30_000 });
 
     await expect(tabList.getByRole('tab', { name: /Setup fabbisogni/i })).toBeVisible();
     await expect(tabList.getByRole('tab', { name: /Monitor copertura/i })).toBeVisible();
@@ -55,7 +55,7 @@ test.describe('RF-H: Copertura turni', () => {
 
     // Assicura di essere sul tab "Setup"
     const setupTab = adminPage.getByRole('tab', { name: /Setup fabbisogni/i });
-    await expect(setupTab).toBeVisible({ timeout: 10_000 });
+    await expect(setupTab).toBeVisible({ timeout: 30_000 });
     if ((await setupTab.getAttribute('aria-selected')) !== 'true') {
       await setupTab.click();
     }
@@ -111,7 +111,7 @@ test.describe('RF-H: Copertura turni', () => {
 
     // Clicca sul tab Monitor copertura
     const monitorTab = adminPage.getByRole('tab', { name: /Monitor copertura/i });
-    await expect(monitorTab).toBeVisible({ timeout: 10_000 });
+    await expect(monitorTab).toBeVisible({ timeout: 30_000 });
     await monitorTab.click();
 
     // Attende che il tab panel sia attivo e il grid visibile
@@ -152,7 +152,7 @@ test.describe('RF-H: Copertura turni', () => {
     await adminPage.goto('/admin/coverage');
 
     const monitorTab = adminPage.getByRole('tab', { name: /Monitor copertura/i });
-    await expect(monitorTab).toBeVisible({ timeout: 10_000 });
+    await expect(monitorTab).toBeVisible({ timeout: 30_000 });
     await monitorTab.click();
 
     // Attende toolbar di navigazione

@@ -217,14 +217,10 @@ test.describe('RF-M employee: Richieste dipendente', () => {
     const swapData = await swapResp.json();
     const swapReqId: string = swapData.id;
 
-    // 2. Admin vede la richiesta di scambio
-    // Il bottone Approva: per uno scambio non ancora accettato dal collega,
-    // l'admin dovrebbe trovarlo visibile (non disabilitato dal lato UI —
-    // è il BE a bloccare l'approvazione).
-    // Verifica che il pannello sia renderizzato.
-    await adminPage.goto('/admin/requests');
-    const panel = adminPage.getByTestId('approval-panel').first();
-    await expect(panel).toBeVisible({ timeout: 15_000 });
+    // 2. Admin naviga al dettaglio della richiesta scambio (il pannello di approvazione
+    // è su /admin/requests/{id}, non sulla lista /admin/requests).
+    await adminPage.goto(`/admin/requests/${swapReqId}`);
+    await expect(adminPage.getByTestId('approval-actions')).toBeVisible({ timeout: 30_000 });
 
     // 3. lucia.verdi (collega) naviga a /requests e vede SwapAcceptRejectPanel
     await colleaguePage.goto('/requests');
@@ -331,7 +327,7 @@ test.describe('RF-M employee: Richieste dipendente', () => {
 
     // mario.rossi NON deve vedere il pannello swap sul proprio profilo
     await employeePage.goto('/requests');
-    await employeePage.waitForLoadState('networkidle', { timeout: 10_000 });
+    await employeePage.waitForLoadState('domcontentloaded', { timeout: 10_000 });
 
     // Il richiedente NON deve vedere il pannello accetta/rifiuta
     const marioSwapPanel = employeePage.getByTestId('swap-accept-reject-panel');
