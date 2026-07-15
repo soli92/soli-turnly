@@ -18,7 +18,7 @@ import { insertAuditLog, extractIp, extractUserAgent } from '@/lib/audit';
 import { resolveRequestSchema } from '@/lib/zod';
 import { emitToUser } from '@/lib/sse/emit';
 import { inngest } from '@/lib/inngest';
-import { formatDate } from '@/lib/date';
+import { formatDate, parseISO } from '@/lib/date';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -107,7 +107,19 @@ export async function POST(req: Request, { params }: RouteParams): Promise<Respo
             data: {
               recipientName: `${requester.firstName} ${requester.lastName}`,
               requestType: humanizeRequestType(existing.type),
-              period: existing.submittedAt ? formatDate(existing.submittedAt) : '',
+              // Legge il periodo effettivo dal payload (startDate/endDate per assenze,
+              // date per turni) — non la data di invio (submittedAt) che è un dato
+              // amministrativo non significativo per il dipendente.
+              period: (() => {
+                const p = existing.payload as Record<string, unknown> | null;
+                const startStr = ((p?.['startDate'] ?? p?.['date']) as string | undefined);
+                const endStr = (p?.['endDate'] as string | undefined);
+                if (!startStr) return '';
+                const startFormatted = formatDate(parseISO(startStr));
+                return endStr
+                  ? `${startFormatted} – ${formatDate(parseISO(endStr))}`
+                  : startFormatted;
+              })(),
               notes: parsed.data.notes ?? undefined,
               appUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'https://turnly.app',
             },
