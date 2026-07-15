@@ -14,7 +14,7 @@ import { mkdir } from 'fs/promises';
 import path from 'path';
 
 async function globalSetup() {
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3001';
 
   // Assicura che la directory .auth esista
   const authDir = path.join(__dirname, '.auth');
