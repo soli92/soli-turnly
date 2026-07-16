@@ -2,8 +2,10 @@
 type: roadmap
 project: soli-turnly
 created: 2026-07-14
-updated: 2026-07-14
+updated: 2026-07-16
 release: "1.0"
+release_status: "complete"
+completed: 2026-07-16
 ---
 
 # Roadmap — soli-turnly
