@@ -1,9 +1,9 @@
-<!-- generated, do not edit — rigenerato da TPM-agent, 2026-07-14 -->
+<!-- generated, do not edit — rigenerato da TPM-agent, 2026-07-14 / updated 2026-07-17 -->
 ---
-sprint_current: 3
-sprint_lookahead: 4
-generated: 2026-07-14
-total_tsk_current: 7
+sprint_current: 4
+sprint_lookahead: ~
+generated: 2026-07-17
+total_tsk_current: 4
 total_tsk_lookahead: 0
 ---
 
@@ -133,3 +133,38 @@ notifiche, email templates, visual regression/A11y, e formalizzare l'endpoint .i
 | TSK-026 | fe+be | POST /api/admin/swap è stub 501 con TODO RB-10 → richiede BE |
 | TSK-031 | be | endpoint già scaffolded in TSK-004; task verifica npm dep + test |
 | TSK-029 | be | sendNotificationEmail.ts esiste, template HTML inline → upgrade React Email |
+
+---
+
+## Sprint 4 — Release & Deploy (CORRENTE)
+
+**Obiettivo:** mettere in produzione la Release 1.0 su Vercel + Neon.
+Tutti i task sono operazioni infra/manuali; il CD è nativo nell'integrazione GitHub di Vercel.
+
+**Dependency graph:**
+- Wave 1 (parallelizzabile): TSK-032, TSK-033*, TSK-034
+- Wave 2 (seriale, dopo Wave 1): TSK-035
+
+*TSK-033 dipende da TSK-032 e TSK-034 per le env vars, ma può essere creato in Vercel in parallelo — le env vars si aggiungono prima del primo deploy.
+
+### Wave 1 — Setup infrastruttura (parallelizzabile)
+
+| TSK | Titolo | Layer | Consumer | Stima | Stato | Depends on |
+|---|---|---|---|---|---|---|
+| TSK-032 | Setup Neon DB produzione — migration + seed admin | db | human | S | todo | — |
+| TSK-033 | Setup Vercel project — root dir + env vars | infra | human | S | todo | TSK-032, TSK-034 |
+| TSK-034 | Inngest Cloud setup — account, app, chiavi | be | human | XS | todo | — |
+
+### Wave 2 — Verifica rilascio
+
+| TSK | Titolo | Layer | Consumer | Stima | Stato | Depends on |
+|---|---|---|---|---|---|---|
+| TSK-035 | Smoke test primo rilascio produzione | qa | human | S | todo | TSK-032, TSK-033, TSK-034 |
+
+## Riepilogo stima Sprint 4
+
+| Stima | Count | Task |
+|---|---|---|
+| XS | 1 | TSK-034 |
+| S | 3 | TSK-032, TSK-033, TSK-035 |
+| **Totale** | **4** | 2 wave |

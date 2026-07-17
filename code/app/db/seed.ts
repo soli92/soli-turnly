@@ -26,12 +26,7 @@ import {
   addDays,
   startOfWeek,
   format,
-  setHours,
-  setMinutes,
-  setSeconds,
-  setMilliseconds,
 } from 'date-fns';
-import { TZDate } from '@date-fns/tz';
 
 import {
   qualifications,
@@ -59,19 +54,10 @@ const db = drizzle(client);
 // Helpers
 // ---------------------------------------------------------------------------
 
-const TIMEZONE = 'Europe/Rome';
-
-/**
- * Builds a timezone-aware Date from a local date and HH:mm in Europe/Rome.
- * Handles DST automatically via @date-fns/tz TZDate (modern API).
- *
- * TZDate extends Date: date-fns helpers (setHours etc.) operate in the
- * declared timezone, so the returned value already carries the correct UTC
- * timestamp — no fromZonedTime needed.
- */
 function localDt(date: Date, hour: number, minute = 0): Date {
-  const tzDate = new TZDate(date, TIMEZONE);
-  return setMilliseconds(setSeconds(setMinutes(setHours(tzDate, hour), minute), 0), 0);
+  const d = new Date(date);
+  d.setHours(hour, minute, 0, 0);
+  return d;
 }
 
 // ---------------------------------------------------------------------------
