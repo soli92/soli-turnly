@@ -1,14 +1,17 @@
-# factory.config.yaml — configurazione factory soli-turnly (v2.32)
+# factory.config.yaml — configurazione factory soli-turnly (v2.42)
 # PATTERN §13 (topology) §14 (stack) §15 (VCS) §16 (sync) §17 (publisher)
 # §18 (scheduler) §19 (CQRL) §20 (compression) §24 (design intelligence)
 # §25 (semantic drift) §27 (prototype generation) §28 (tavola rotonda)
 # §29 (factory scalability patterns EP-040) §30 (voice channel EP-041)
-# §31 (hybrid wiki search EP-042)
+# §31 (hybrid wiki search EP-042) §32 (content share EP-048)
+# §33 (code intelligence EP-054) §34 (semantic purpose EP-055)
+# §35 (wiki keeper 2.0 EP-056) §36 (refactor skill layer EP-060)
+# §37 (session observability EP-061+EP-062)
 
 project_name: "soli-turnly"
 language: it
 owner: "soli92"
-pattern_version: "2.32"
+pattern_version: "2.42"
 
 topology: full-stack-agents   # knowledge-only | plan-only | full-stack-agents | hybrid-be-agents | hybrid-fe-agents | custom
 
@@ -288,3 +291,77 @@ vcs:
     dispatch_gate: warn          # off | warn | block
     auto_align: propose          # off | propose (mai checkout silente, R.B8)
     drift_check: true
+
+# =============================================================
+# Delta v2.33 → v2.42 (10 delta cumulativi) — tutte opt-in default false
+# Applicato con /factory-upgrade 2.32 → 2.42 additivo puro.
+# =============================================================
+
+# Content Share Consumer Layer (v2.33, EP-048, PATTERN §32) — opt-in
+content_share:
+  enabled: false               # richiede repo consumer (es. soli-frames) configurato
+  target_repo: ""              # es. "soli92/soli-frames"
+  auth_env: GITHUB_TOKEN
+  event_type: soli-frame-publish
+  human_gate: true             # R.CS3 non bypassabile
+
+# Code Intelligence Stack (v2.37, EP-054, PATTERN §33) — opt-in
+code_intelligence:
+  enabled: false               # master switch (R.CI1)
+  l1_ctags:
+    enabled: false
+    tags_dir: .ctags-state
+  l2_semantic:
+    enabled: false
+    embedding_model: nomic-embed-code
+    index_path: .code-search/index.lance
+    chunk_strategy: symbol
+  l3_impact:
+    enabled: false             # richiede graphify installato
+
+# Semantic Purpose Layer (v2.38, EP-055, PATTERN §34) — opt-in
+wiki_purpose:
+  enabled: false               # se true wiki-keeper legge wiki/purpose.md in Step 0
+  purpose_path: "wiki/purpose.md"
+
+# Wiki Keeper 2.0 — Semantic Sweep (v2.38, EP-056, PATTERN §35) — opt-in
+wiki_sweep:
+  enabled: false
+  max_iterations: 3
+  resolution_loop: bounded
+
+# Ponytail YAGNI Decision Ladder (v2.39, EP-057, PATTERN §29.x) — opt-in
+# HARD DEP: richiede code_quality.enabled: true
+ponytail:
+  enabled: false
+  passes:
+    yagni_ladder: false        # Pass 4 advisory in code-review-protocol
+  lint:
+    severity: warning          # warning | info (forzato info su code_path: ".")
+  audit:
+    exclude_patterns: []
+
+# Factory-as-MCP-Server adapter (v2.39, EP-058) — opt-in
+# Read-only bridge factory → MCP client (Claude Desktop, altri host MCP)
+mcp_server:
+  enabled: false               # R.MCP1 no-write, read-only
+  pin_version: "1.3.0"
+  transport: stdio
+
+# Refactor Skill Layer / Fleet Health (v2.41, EP-060, PATTERN §36) — opt-in
+refactor_agent_skills:
+  enabled: false               # gate master (Check 4ap WARNING-only)
+  thresholds:
+    max_lines_body: 200
+    max_lines_frontmatter: 50
+    fanout_alert: 8
+  snapshot_dir: ".refactor-snapshots"
+
+# Session Observability (v2.42, EP-061 + EP-062, PATTERN §37) — opt-in
+# Analyzer read-only sui transcript JSONL + handoff verso fleet-doctor
+session_analysis:
+  enabled: false
+  transcripts_glob: "~/.claude/projects/**/*.jsonl"
+  anomaly_schema: "tools/session-analysis/schema-anomaly.json"
+  reports_path: "code_quality/reports/session-analysis/"
+  handoff_to_fleet_doctor: true

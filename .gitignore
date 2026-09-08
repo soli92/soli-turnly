@@ -1,6 +1,13 @@
-# Factory llm-wiki++ v2.32
+# Factory llm-wiki++ v2.42
 # Side-channel Graphify (CCL, R.G6 v2.14) — non versionato
 .graphify-state/
+
+# Code Intelligence L1/L2 side-channels (EP-054, v2.37 opt-in)
+.ctags-state/
+.code-search/
+
+# Refactor snapshots (EP-060, v2.41 opt-in)
+.refactor-snapshots/
 
 # Hybrid Wiki Search index (EP-042, R.WS2 v2.29)
 .wiki-search/
@@ -45,3 +52,4 @@ dist/
 coverage/
 .coverage
 htmlcov/
+test-results/

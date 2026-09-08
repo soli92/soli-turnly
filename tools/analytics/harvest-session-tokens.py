@@ -1,35 +1,86 @@
 #!/usr/bin/env python3
 """
-harvest-session-tokens.py — raccoglie il token-usage REALE da un transcript Claude Code
-(JSONL) e lo registra nell'event store via record-event.sh. È il "pezzo mancante" che
-rende operativa la cattura token (EP-009/EP-013): l'hook payload NON contiene i token,
-ma il transcript JSONL sì (campo message.usage).
+harvest-session-tokens.py — collects REAL token-usage from a Claude Code transcript
+(JSONL) and records it to the event store via record-event.sh. It's the "missing piece" that
+makes token capture operational (EP-009/EP-013): the payload hook does NOT contain the tokens,
+but the JSONL transcript does (message.usage field).
 
-USO:
-  # da CLI (backfill):
+USE:
+  # from CLI (backfill):
   harvest-session-tokens.py <transcript.jsonl> [--project <id>] [--dry-run]
-  # da hook Claude Code (Stop/SessionEnd): legge il JSON del hook da stdin e ne estrae transcript_path
+  # from hook Claude Code (Stop/SessionEnd): reads the hook JSON from stdin and extracts transcript_path
   echo '<hook-json>' | harvest-session-tokens.py --from-hook [--dry-run]
 
-COSA FA (deterministico, no LLM):
-  - parse del JSONL; per ogni riga type=assistant con message.usage, somma i 4 token-kind
-    aggregando per (model, isSidechain). isSidechain=true → sub-agent; false → main thread.
-  - emette UN evento per (model, scope) via record-event.sh --event '<json>' (single-writer R.G5).
-  - idempotente: ts = timestamp ultimo messaggio del gruppo; task_id stabile = session+scope+model
-    → re-run non duplica (record-event.sh dedup su sha256(task_id|state|ts)).
+WHAT IT DOES (deterministic, no LLM):
+  - JSONL parse; for each type=assistant line with message.usage, add the 4 token-kinds
+    aggregating by (model, scope). Scope attribution (TSK-545 walker fan-in):
+      * file location takes priority over isSidechain (CC 2.1.258+ compat)
+      * main JSONL → scope determined by isSidechain (backward compat fallback)
+      * subagents/agent-*.jsonl → scope "subagent" always (file-location wins)
+  - WALKER FAN-IN (CC 2.1.258+): sub-agents write to a separate directory
+    <session-uuid>/subagents/agent-<hash>.jsonl (isSidechain is always False in the
+    main transcript). collect_jsonl_files() discovers those files automatically.
+    Backward compat: if subagents/ is absent → fail-open, output identical to pre-TSK-545.
+  - emit ONE event for (model, scope) via record-event.sh --event '<json>' (single-writer R.G5).
+  - idempotent: ts = timestamp of last message of the group; stable task_id = session+scope+model
+    → re-run does not duplicate (record-event.sh dedup on sha256(task_id|state|ts)).
 
-LIMITI (onesti):
-  - il transcript espone i token per MESSAGGIO, non per TSK: l'aggregazione è per sessione/scope,
-    non per task_id del kanban. Granularità per-TSK richiederebbe correlare i marker develop.
-  - il costo si calcola con compute-agentic-cost.sh SOLO se il `model` è in analytics/pricing.yaml.
+LIMITS (honest):
+  - the transcript exposes the tokens per MESSAGE, not per TSK: the aggregation is per session/scope,
+    not for kanban task_id. Per-TSK granularity would require correlating develop markers.
+  - the cost is calculated with compute-agentic-cost.sh ONLY if the `model` is in analytics/pricing.yaml.
+
+
 """
 import sys, json, subprocess, os, datetime, argparse, pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
 RECORD = HERE / "record-event.sh"
 
-def parse_transcript(path):
-    """Ritorna dict: (model, scope) -> {input,output,cache_read,cache_write, msgs, last_ts}."""
+# --- Schema-version guard (TSK-546) -------------------------------------------
+# Known-good Claude Code versions whose JSONL schema has been empirically verified.
+# When a new CC release changes the JSONL format: verify compatibility, then add the
+# version string here. Do NOT add blindly — parsing correctness must be confirmed first.
+SUPPORTED_CC_VERSIONS = {
+    "2.1.263",  # empirically verified in TSK-545/TSK-546 (2026-09-08) — current session
+    "2.1.258",  # empirically verified in TR-c4e8f1b2 (2026-09-08)
+    "2.1.257",  # structurally identical to 2.1.258, no format change observed
+    "2.1.256",  # structurally identical to 2.1.258, no format change observed
+}
+
+
+def detect_cc_version(transcript_path):
+    """Return the Claude Code version string from the first JSONL line that contains
+    a top-level 'version' field, or None if the field is absent in the whole file.
+
+    Reads only until the first hit (cheap) — does NOT parse the whole transcript.
+    Fail-open: returns None on any OSError or malformed JSON.
+    """
+    try:
+        with open(transcript_path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                v = d.get("version")
+                if v is not None:
+                    return str(v)
+    except OSError:
+        pass
+    return None
+# ------------------------------------------------------------------------------
+
+def parse_transcript(path, force_scope=None):
+    """Ritorna dict: (model, scope) -> {input,output,cache_read,cache_write, msgs, last_ts}.
+
+    force_scope: se None, determina scope via isSidechain (backward compat per old CC).
+                 se "main" o "subagent", forza lo scope per tutte le righe (file-location wins,
+                 TSK-545). isSidechain diventa fallback, NON fonte primaria.
+    """
     agg = {}
     with open(path, encoding="utf-8") as fh:
         for line in fh:
@@ -47,7 +98,11 @@ def parse_transcript(path):
             if not usage:
                 continue
             model = msg.get("model") or "unknown"
-            scope = "subagent" if d.get("isSidechain") else "main"
+            # file-location wins (force_scope); isSidechain as retro-schema fallback only
+            if force_scope is not None:
+                scope = force_scope
+            else:
+                scope = "subagent" if d.get("isSidechain") else "main"
             ts = d.get("timestamp") or ""
             k = (model, scope)
             a = agg.setdefault(k, {"input": 0, "output": 0, "cache_read": 0,
@@ -60,6 +115,58 @@ def parse_transcript(path):
             if ts > a["last_ts"]:
                 a["last_ts"] = ts
     return agg
+
+
+def collect_jsonl_files(transcript):
+    """Ritorna lista di (pathlib.Path, force_scope) per il fan-in.
+
+    Struttura directory CC 2.1.258+:
+      ~/.claude/projects/<mangled-cwd>/<session-uuid>.jsonl         ← main
+      ~/.claude/projects/<mangled-cwd>/<session-uuid>/subagents/agent-<hash>.jsonl  ← sub
+
+    - JSONL principale: force_scope=None → isSidechain come fallback (backward compat)
+    - File in subagents/: force_scope="subagent" → file-location vince su isSidechain
+    - Se subagents/ non esiste → fail-open, solo main (sessioni pre-2.1.258 o adapter non CC)
+    """
+    main_path = pathlib.Path(transcript)
+    files = [(main_path, None)]  # None = backward compat via isSidechain
+
+    # La directory della sessione ha lo stesso nome del JSONL (senza estensione)
+    session_dir = main_path.parent / main_path.stem
+    subagents_dir = session_dir / "subagents"
+
+    if subagents_dir.exists():
+        for p in sorted(subagents_dir.glob("agent-*.jsonl")):
+            files.append((p, "subagent"))
+
+    return files
+
+
+def fan_in_parse(transcript):
+    """Fan-in: parse JSONL principale + tutti i subagents/agent-*.jsonl.
+
+    Ritorna agg dict (stessa forma di parse_transcript) con scope attribuito
+    per file-location (TSK-545). Deduplica per session: tutti i file appartengono
+    alla stessa sessione e vengono aggregati per (model, scope).
+    Fail-open su file mancanti o illeggibili.
+    """
+    merged = {}
+    for (fpath, force_scope) in collect_jsonl_files(transcript):
+        try:
+            partial = parse_transcript(str(fpath), force_scope=force_scope)
+        except OSError:
+            continue  # fail-open: file mancante o permesso negato
+        for (model, scope), data in partial.items():
+            k = (model, scope)
+            if k not in merged:
+                merged[k] = dict(data)
+            else:
+                for field in ("input", "output", "cache_read", "cache_write", "msgs"):
+                    merged[k][field] += data[field]
+                if data["last_ts"] > merged[k]["last_ts"]:
+                    merged[k]["last_ts"] = data["last_ts"]
+    return merged
+
 
 def to_iso_z(ts):
     """Normalizza a ISO-8601 UTC con Z (lo schema lo richiede)."""
@@ -103,9 +210,9 @@ def main():
             hook = json.load(sys.stdin)
             transcript = hook.get("transcript_path") or transcript
         except (json.JSONDecodeError, ValueError):
-            transcript = None  # fail-open: prova il fallback sotto
-        # Fallback: alcuni hook (es. SessionEnd) potrebbero non esporre transcript_path
-        # → individua il transcript più recente per la cwd corrente.
+            transcript = None  # fail-open: try fallback below
+        # Fallback: Some hooks (e.g. SessionEnd) may not expose transcript_path
+        # → locates the most recent transcript for the current cwd.
         if not transcript or not os.path.exists(transcript):
             mangled = os.getcwd().replace("/", "-").replace(".", "-")
             pdir = os.path.expanduser(f"~/.claude/projects/{mangled}")
@@ -121,7 +228,32 @@ def main():
 
     project_id = args.project or os.path.basename(os.getcwd())
     session_id = pathlib.Path(transcript).stem
-    agg = parse_transcript(transcript)
+
+    # --- Schema-version guard (TSK-546) ---
+    # Detect Claude Code version from the transcript; warn and mark degraded if unknown.
+    cc_version = detect_cc_version(transcript)
+    schema_degraded = False
+    if cc_version is None:
+        print(
+            "WARNING: Claude Code version not found in transcript; "
+            "parsing in degraded mode (may miss data)",
+            file=sys.stderr,
+        )
+        schema_degraded = True
+    elif cc_version not in SUPPORTED_CC_VERSIONS:
+        print(
+            f"WARNING: Claude Code version {cc_version} not in supported set; "
+            "parsing in degraded mode (may miss data)",
+            file=sys.stderr,
+        )
+        schema_degraded = True
+    # -------------------------------------
+
+    # Fan-in: main JSONL + subagents/agent-*.jsonl (TSK-545)
+    all_files = collect_jsonl_files(transcript)
+    n_subagent_files = sum(1 for (_, s) in all_files if s == "subagent")
+    agg = fan_in_parse(transcript)
+
     if not agg:
         print(json.dumps({"status": "skip", "reason": "nessun record usage nel transcript"}))
         return 0
@@ -143,6 +275,8 @@ def main():
             results.append({"task_id": ev["task_id"], "recorded": False, "error": str(e)})
 
     print(json.dumps({"status": "ok", "transcript": transcript,
+                      "subagent_files": n_subagent_files,
+                      "schema_degraded": schema_degraded,
                       "groups": len(agg), "results": results}, indent=2))
     return 0
 

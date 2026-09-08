@@ -2,8 +2,26 @@
 
 Applicazione per la gestione della turnazione del personale e staff.
 
-Questo repo segue il pattern definito in [`PATTERN.md`](PATTERN.md) (v2.32, agent-agnostic,
-multi-adapter, Compression Layer a due assi opt-in).
+Questo repo segue il pattern definito in [`PATTERN.md`](PATTERN.md) (v2.42, agent-agnostic,
+multi-adapter, Compression Layer a due assi opt-in; upgrade v2.32 → v2.42 applicato
+2026-09-08 in modalità additiva — vedi [`CHANGELOG.md`](CHANGELOG.md)).
+
+## Meta-prompt versioning (v2.42 — corrente)
+
+Fonte di verità: `factory.config.yaml#pattern_version`. Delta cumulativi
+applicati rispetto a v2.32 (backward compat totale, tutte opt-in):
+
+- v2.33 — Content Share Consumer Layer (EP-048, PATTERN §32)
+- v2.34 — Governance Enforcement + Adoption Onboarding + Bus Factor + Tech Debt (EP-049..052)
+- v2.36 — Backport portale-servizi-factory (EP-053: R.21 cooperative locking, /onboarding, vcs-preflight, PATTERN §23.9)
+- v2.37 — Code Intelligence Stack (EP-054, PATTERN §33 — L1 ctags + L2 semantic + L3 impact)
+- v2.38 — Semantic Purpose Layer + Wiki Keeper 2.0 (EP-055 + EP-056, PATTERN §34 + §35)
+- v2.39 — Ponytail Decision Ladder + Factory-as-MCP-Server (EP-057 + EP-058)
+- v2.40 — Backport delta portale-servizi-factory (EP-059: release-manager, tpm-reconcile, deep-functional-probe, release-protocol, statusline-ledger)
+- v2.41 — Refactor Skill Layer / Fleet Health (EP-060, PATTERN §36 — agente fleet-doctor + skill refactor-agent-skills)
+- v2.42 — Session Observability (EP-061 + EP-062, PATTERN §37 — session-analysis + walker fan-in harvest CC 2.1.258+)
+
+Meta-prompt seed: [`meta-prompts/v2-42/factory-bootstrap.md`](meta-prompts/v2-42/factory-bootstrap.md).
 
 ## Quick start
 
@@ -44,6 +62,15 @@ multi-adapter, Compression Layer a due assi opt-in).
 | OCL Output Compression | **ON** | v2.14 — caveman provider, conservative |
 | CCL Context Compression (Graphify) | off | v2.14 — richiede graphify provider configurato |
 | Analytics Estimation (EP-010) | **ON** | v2.19 |
+| Content Share Consumer (EP-048) | off | v2.33 — `/share` (richiede target_repo) |
+| Code Intelligence Stack (EP-054) | off | v2.37 — L1 ctags / L2 semantic / L3 impact |
+| Semantic Purpose Layer (EP-055) | off | v2.38 — `wiki/purpose.md` guida ingest wiki-keeper |
+| Wiki Keeper 2.0 Sweep (EP-056) | off | v2.38 — `/sweep-reviews` |
+| Ponytail Decision Ladder (EP-057) | off | v2.39 — `/ponytail-review`, `/ponytail-audit` (HARD DEP code_quality) |
+| Factory-as-MCP-Server (EP-058) | off | v2.39 — `adapters/mcp/` read-only |
+| Release Manager + tpm-reconcile (EP-059) | off | v2.40 — agente `release-manager`, skill backport |
+| Fleet Health (EP-060) | off | v2.41 — agente `fleet-doctor`, `/refactor` |
+| Session Observability (EP-061+EP-062) | off | v2.42 — `/session-analysis`, walker fan-in harvest |
 
 ## Token Ledger (EP-022)
 
